@@ -1,5 +1,5 @@
 pipeline {
-    agent [label '']
+    agent any
 
     environment {
         APP_HOME = '/opt/plagiarism-app'
