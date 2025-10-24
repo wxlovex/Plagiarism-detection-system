@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_HOME = '/opt/plagiarism-app'
-        PYTHON = '/lib/python3.6/'
+        PYTHON = '/usr/bin/python3.6'
         VENV = "${APP_HOME}/venv"
     }
 
