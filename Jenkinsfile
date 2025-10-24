@@ -25,8 +25,8 @@ pipeline {
                     cd ${APP_HOME}
                     ${PYTHON} -m venv ${VENV}
                     source ${VENV}/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    ${VENV}/bin/pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 300 --retries 3
+                    ${VENV}/bin/pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 300 --retries 3
                     deactivate
                 """
             }
