@@ -28,6 +28,9 @@ pipeline {
                     ${VENV}/bin/pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 300 --retries 3
                     ${VENV}/bin/pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 300 --retries 3
                     deactivate
+                    sudo mkdir -p ${APP_HOME}/uploads
+                    sudo chown -R root:root ${APP_HOME}/uploads  # root可写（systemd用root）
+                    sudo chmod 755 ${APP_HOME}/uploads
                 """
             }
         }

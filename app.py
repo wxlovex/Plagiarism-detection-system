@@ -172,6 +172,7 @@ app.secret_key = 'your_secret_key'  # 闪现消息用
 def index():
     results = None
     stats = None  # 统计
+    export_data = None
     if request.method == 'POST':
         # 处理上传
         test_file = request.files['test_file']
@@ -183,6 +184,12 @@ def index():
             test_path = os.path.join('uploads', test_file.filename)
             os.makedirs('uploads', exist_ok=True)
             test_file.save(test_path)
+            if test_file and test_file.filename.endswith('.txt'):
+                # 改：用绝对路径uploads，确保可写
+                upload_dir = os.path.join(os.getcwd(), 'uploads')
+                os.makedirs(upload_dir, exist_ok=True)
+                test_path = os.path.join(upload_dir, test_file.filename)
+                test_file.save(test_path)
             text1 = read_file(test_path)
 
             if text1 and os.path.exists(folder):
