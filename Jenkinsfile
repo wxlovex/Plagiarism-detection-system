@@ -1,61 +1,70 @@
 pipeline {
-    agent [label '']
+    agent [label '']  // 任何节点跑（默认master）
+
+    environment {
+        APP_HOME = '/opt/plagiarism-app'  // 部署目录
+        PYTHON = '/lib/python3.6/'  // Python
+        VENV = "${APP_HOME}/venv"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/your-repo/python-project.git', branch: 'main'
+                echo '拉取代码...'
+                checkout scm  // 从Git拉（项目配置的repo）
             }
         }
+
         stage('Build') {
             steps {
-                sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-                pip install -r requirements.txt
-                '''
+                echo '安装依赖...'
+                sh """
+                    rm -rf ${APP_HOME}  // 清旧部署
+                    mkdir -p ${APP_HOME}
+                    cp -r * ${APP_HOME}/  // 复制项目文件
+                    cd ${APP_HOME}
+                    ${PYTHON} -m venv ${VENV}
+                    source ${VENV}/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt  // 需加requirements.txt
+                    deactivate
+                """
             }
         }
-        stage('Test') {  // 可选：运行测试
-            steps {
-                sh '''
-                . venv/bin/activate
-                pytest  # 假设有pytest测试
-                '''
-            }
-        }
+
         stage('Deploy') {
             steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'Target-Server',  // 在系统配置中定义的SSH主机名
-                            transfers: [
-                                sshTransfer(
-                                    sourceFiles: 'venv/',  // 传输虚拟环境或打包文件
-                                    remoteDirectory: '/opt/myapp/',  // 目标机部署目录
-                                    execCommand: '''
-                                        cd /opt/myapp/
-                                        deactivate || true  # 如果有旧环境
-                                        rm -rf venv  # 清理旧环境
-                                        # 解压或直接使用传输的文件
-                                        source venv/bin/activate
-                                        nohup python app.py > app.log 2>&1 &  # 后台运行
-                                    '''
-                                )
-                            ]
-                        )
-                    ]
-                )
+                echo '部署服务...'
+                sh """
+                    cd ${APP_HOME}
+                    source ${VENV}/bin/activate
+                    nohup gunicorn --bind 0.0.0.0:5000 app:app > gunicorn.log 2>&1 &  // 后台跑
+                    deactivate
+                """
+                sleep 5  // 等启动
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo '简单测试...'
+                sh """
+                    curl -f http://localhost:5000 || echo '测试失败'
+                """
             }
         }
     }
+
     post {
         always {
-            emailext(  // 可选：邮件通知，需安装Email Extension插件
-                subject: "Build ${currentBuild.currentResult}: ${env.JOB_NAME}",
-                body: "Check console output at ${env.BUILD_URL} to view the results.",
-                to: 'your-email@example.com'
-            )
+            echo '清理...'
+            // 可加邮件通知：mail to: 'your@email.com' ...
+        }
+        success {
+            echo '部署成功！访问 http://your-ip:5000'
+        }
+        failure {
+            echo '部署失败！'
         }
     }
 }
