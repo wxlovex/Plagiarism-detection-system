@@ -78,7 +78,7 @@ pipeline {
                     sudo -u user2201 scp -o StrictHostKeyChecking=no app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
 
                     # SSH到目标机导入+运行（清理旧容器）
-                    ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
+                    sudo -u user2201 ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
                         docker load -i /tmp/app.tar
                         docker rm -f plagiarism-app || true
                         docker run -d -p 5000:5000 --restart=always --name plagiarism-app plagiarism-detection:latest
