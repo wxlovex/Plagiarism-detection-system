@@ -71,6 +71,7 @@ pipeline {
                     docker save -o app.tar plagiarism-detection:latest
 
                     # SCP tar到目标机
+                    su user2201
                     scp app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
 
                     # SSH到目标机导入+运行（清理旧容器）
