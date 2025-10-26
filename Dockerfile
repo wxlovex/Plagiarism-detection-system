@@ -1,4 +1,5 @@
-FROM python:3.6-slim  # 匹配你的3.6，slim减大小
+# 匹配你的3.6，slim减大小
+FROM python:3.6-slim
 
 WORKDIR /app
 
