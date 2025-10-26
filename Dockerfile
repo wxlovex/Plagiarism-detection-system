@@ -4,7 +4,10 @@ WORKDIR /app
 
 # 复制requirements + 安装依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install flask:2.0.3
+RUN pip install jieba:0.42.1
+RUN pip install scikit-learn:0.24.2
+RUN pip install gunicorn:21.2.0
 
 # 复制项目文件
 COPY . .
