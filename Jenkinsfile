@@ -5,6 +5,8 @@ pipeline {
         APP_HOME = '/opt/plagiarism-app'
         PYTHON = '/usr/bin/python3.6'
         VENV = "${APP_HOME}/venv"
+        TARGET_HOST = 'hadoop103'
+        TARGET_USER = 'user2201'
     }
 
     stages {
@@ -59,11 +61,30 @@ pipeline {
 
         stage('Image') {
             steps {
-                echo '构建镜像传输到目标机并运行'
-                sh """
-                    su user2201
-                    ssh user2201@192.168.119.103 -o StrictHostKeyChecking=no 'bash -s' < /home/user2201/pla.sh
-                """
+                echo '构建镜像并传输到目标机运行'
+                sh '''
+                    # 建Docker镜像（在当前机）
+                    cd ${APP_HOME}
+                    docker build -t plagiarism-detection:latest .
+
+                    # 导出tar
+                    docker save -o app.tar plagiarism-detection:latest
+
+                    # SCP tar到目标机
+                    scp app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
+
+                    # SSH到目标机导入+运行（清理旧容器）
+                    ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
+                        docker load -i /tmp/app.tar
+                        docker rm -f plagiarism-app || true
+                        docker run -d -p 5000:5000 --restart=always --name plagiarism-app plagiarism-detection:latest
+                        rm /tmp/app.tar
+                        echo '目标机Docker运行成功'
+                    "
+
+                    # 清理当前机tar
+                    rm app.tar
+                '''
             }
         }
 
