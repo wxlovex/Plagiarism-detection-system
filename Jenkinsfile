@@ -62,7 +62,7 @@ pipeline {
                 echo '构建镜像传输到目标机并运行'
                 sh """
                     su user2201
-                    ssh  user2201@hadoop103 -o StrictHostKeyChecking=no 'bash -s' < /home/user2201/pla.sh
+                    ssh -o StrictHostKeyChecking=no 'bash -s' < /home/user2201/pla.sh
                 """
             }
         }
