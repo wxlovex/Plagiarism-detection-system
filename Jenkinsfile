@@ -70,6 +70,10 @@ pipeline {
                     # 导出tar
                     docker save -o app.tar plagiarism-detection:latest
 
+                    # Fix权限
+                    sudo chown ${USER}:${USER} app.tar  # Jenkins workspace用户
+                    chmod 644 app.tar
+
                     # SCP tar到目标机
                     su user2201
                     scp app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
