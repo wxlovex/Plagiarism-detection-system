@@ -76,7 +76,7 @@ pipeline {
 
                     # SCP tar到目标机
                     su user2201
-                    scp app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
+                    sudo -u user2201 scp -o StrictHostKeyChecking=no app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
 
                     # SSH到目标机导入+运行（清理旧容器）
                     ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
