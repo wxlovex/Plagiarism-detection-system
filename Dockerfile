@@ -1,18 +1,15 @@
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.6
+FROM python:3.6-slim  # 匹配你的3.6，slim减大小
 
 WORKDIR /app
 
-# 复制requirements + 安装依赖
+# 复制requirements + 安装所有依赖（一键，避免多RUN）
 COPY requirements.txt .
-RUN pip install flask:2.0.3
-RUN pip install jieba:0.42.1
-RUN pip install scikit-learn:0.24.2
-RUN pip install gunicorn:21.2.0
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制项目文件
 COPY . .
 
-# 创建uploads目录
+# 创建uploads
 RUN mkdir -p uploads && chmod 755 uploads
 
 # 暴露端口
