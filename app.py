@@ -4,6 +4,8 @@ import argparse
 import glob
 import os
 import sys
+import pymysql
+from config import DB_CONFIG
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, render_template, request, flash
@@ -62,6 +64,30 @@ def compute_similarity(text1, text2):
     # 融合（可调权重）
     final_score = 0.7 * tfidf_score + 0.3 * jaccard_score
     return final_score
+
+
+def get_templates_from_db(folder):
+    """从DB拉取指定category的所有content"""
+    # 新增：从路径提取category
+    if folder.endswith('/'):
+        folder = folder.rstrip('/')
+    category = folder.split('/')[-1] if '/' in folder else folder  # e.g., "./refs/general/" → 'general'
+    print(f"调试：提取category = '{category}' 从 folder='{folder}'")  # 日志1：检查提取
+
+    try:
+        conn = pymysql.connect(**DB_CONFIG)
+        print(f"调试：DB连接成功")  # 日志2：连接OK
+        cursor = conn.cursor()
+        sql = "SELECT title, content FROM templates WHERE category = %s"
+        cursor.execute(sql, (category,))
+        results = cursor.fetchall()
+        print(f"调试：查询结果数 = {len(results)}")  # 日志3：行数
+        cursor.close()
+        conn.close()
+        return results
+    except Exception as e:
+        print(f"DB错误: {e}")  # 已有的，日志4：异常
+        return []
 
 
 # 读文件
@@ -185,17 +211,18 @@ def index():
             test_file.save(test_path)
             text1 = read_file(test_path)
 
-            if text1 and os.path.exists(folder):
-                # 批量检测（复用步骤6逻辑）
-                ref_files = glob.glob(os.path.join(folder, "*.txt"))
-                if ref_files:
+            if not folder:
+                flash('请选择参考模板库！')
+            elif text1:
+                # 查询DB
+                db_results = get_templates_from_db(folder)  # folder=category
+                print(f"调试：db_results长度 = {len(db_results)}")
+                if db_results:
                     batch_results = []
-                    for ref_file in ref_files:
-                        text2 = read_file(ref_file)
-                        if text2:
-                            score = compute_similarity(text1, text2)
-                            judgment = judge_plagiarism(score, threshold)
-                            batch_results.append((os.path.basename(ref_file), score, judgment))
+                    for title, content in db_results:
+                        score = compute_similarity(text1, content)
+                        judgment = judge_plagiarism(score, threshold)
+                        batch_results.append((title, score, judgment))  # 用title替换basename
                     batch_results.sort(key=lambda x: x[1], reverse=True)
                     results = batch_results
 
@@ -210,7 +237,7 @@ def index():
                             stats['疑似抄袭'] += 1
 
                 else:
-                    flash('参考文件夹无txt文件！')
+                    flash('模板库无数据！检查DB')
             else:
                 flash('无效文件夹或测试文件！')
         else:
