@@ -1,5 +1,5 @@
 # python3.6
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.6
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.6-slim
 
 WORKDIR /app
 
