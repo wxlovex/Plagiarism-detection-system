@@ -7,6 +7,9 @@ pipeline {
         VENV = "${APP_HOME}/venv"
         TARGET_HOST = 'hadoop103'
         TARGET_USER = 'user2201'
+        REDIS_HOST = '192.168.119.102'  // 容器内链接
+        REDIS_PORT = '6379'
+        USE_REDIS = '0'
     }
 
     stages {

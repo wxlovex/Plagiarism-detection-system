@@ -1,14 +1,29 @@
 import re
+from datetime import timedelta
+
 import jieba
 import argparse
 import glob
 import os
-import sys
 import pymysql
-from config import DB_CONFIG
+import redis
+import json
+from datetime import timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
+from config import DB_CONFIG, REDIS_CONFIG, JWT_SECRET_KEY
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from flask import Flask, render_template, request, flash
+from flask import Flask, render_template, request, flash, redirect, url_for, session, make_response
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, unset_jwt_cookies, \
+    set_access_cookies, get_csrf_token, get_jwt
+
+from config import DB_CONFIG, REDIS_CONFIG, JWT_SECRET_KEY
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from flask import Flask, render_template, request, flash, session, redirect, url_for
+
+rdb = redis.from_url(f'redis://{REDIS_CONFIG["host"]}:{REDIS_CONFIG["port"]}/{REDIS_CONFIG["db"]}',
+                     decode_responses=True)
 
 
 # 预处理函数
@@ -192,13 +207,102 @@ def main():
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 闪现消息用
+# JWT 配置
+app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True  # 保持启用
+app.config['JWT_CSRF_CHECK_FORM'] = True  # 新增：检查 form['csrf_token'] 而非 header
+app.config['JWT_ACCESS_COOKIES'] = {
+    'secure': False,  # 生产：True (HTTPS)
+    'httponly': True,
+    'samesite': 'Lax'
+}
+jwt = JWTManager(app)
+
+
+# 登录路由
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password']
+        if not username or not password:
+            flash('用户名和密码不能为空！')
+            return render_template('login.html')
+
+        user_key = f"user:{username}"
+        user_data_str = rdb.get(user_key)
+        if not user_data_str:
+            flash('用户不存在！')
+            return render_template('login.html')
+
+        user_data = json.loads(user_data_str)
+        if check_password_hash(user_data['hashed_password'], password):
+            access_token = create_access_token(identity=username)  # 自动嵌入随机 CSRF 到 JWT
+            resp = make_response(redirect(url_for('index')))
+            set_access_cookies(resp, access_token)  # 设置 JWT cookie + 非 httponly CSRF cookie
+            flash('登录成功！')
+            return resp
+        else:
+            flash('密码错误！')
+    return render_template('login.html')
+
+
+# 注册路由（不变，注册后重定向登录）
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password']
+        if not username or len(password) < 6:
+            flash('用户名不能为空，密码至少6位！')
+            return render_template('register.html')
+
+        user_key = f"user:{username}"
+        if rdb.exists(user_key):
+            flash('用户名已存在！')
+            return render_template('register.html')
+
+        hashed_pw = generate_password_hash(password, method='pbkdf2:sha256:600000')
+        user_data = json.dumps({'hashed_password': hashed_pw, 'created_at': '2025-11-11'})
+        rdb.set(user_key, user_data, ex=86400 * 365)  # 1年过期
+        flash('注册成功，请登录！')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+
+@app.errorhandler(401)
+def unauthorized(e):
+    flash('请先登录！')
+    return redirect(url_for('login'))
+
+
+# 登出路由
+@app.route('/logout')
+@jwt_required()
+def logout():
+    resp = make_response(redirect(url_for('login')))
+    unset_jwt_cookies(resp)  # 清除 cookie
+    flash('已登出。')
+    return resp
 
 
 @app.route('/', methods=['GET', 'POST'])
+@jwt_required()
 def index():
+    current_user = get_jwt_identity()  # 从 JWT 获取用户名
+    # 从JWT提取token
+    csrf_token = get_jwt().get('csrf', '')
+
     results = None
     stats = None  # 统计
+
     if request.method == 'POST':
+        # 调试日志
+        print(f"POST CSRF from form: {request.form.get('csrf_token', 'MISSING')}")
+        print(f"Expected CSRF from JWT: {csrf_token}")
+
         # 处理上传
         test_file = request.files['test_file']
         folder = request.form['folder']
@@ -243,7 +347,7 @@ def index():
         else:
             flash('请上传txt文件！')
 
-    return render_template('index.html', results=results, stats=stats)
+    return render_template('index.html', results=results, stats=stats, current_user=current_user, csrf_token=csrf_token)
 
 
 if __name__ == '__main__':

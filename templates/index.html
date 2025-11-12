@@ -50,9 +50,25 @@
         .high-sim { background-color: #ffebee; color: #d32f2f; }  /* 高相似红行 */
         .medium-sim { background-color: #fff3e0; color: #f57c00; }  /* 中等橙行 */
         .low-sim { background-color: #e8f5e8; color: #388e3c; }  /* 低绿行 */
+        .navbar-brand, .nav-link {
+            color: white !important;
+        }
+        .nav-link:hover {
+            color: #ffc107 !important;
+        }
     </style>
 </head>
 <body>
+<!-- 新增：导航栏，显示当前用户和登出按钮 -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">致谢抄袭检测系统</a>
+        <div class="navbar-nav ms-auto">
+            <span class="nav-link">欢迎，{{ current_user }}！</span>
+            <a class="nav-link btn btn-outline-light" href="{{ url_for('logout') }}">登出</a>
+        </div>
+    </div>
+</nav>
 <div class="container">
     <h1 class="text-center mb-4" style="color: #007bff;">毕业论文致谢抄袭检测系统</h1>
     {% with messages = get_flashed_messages() %}
@@ -66,6 +82,7 @@
     {% endif %}
     {% endwith %}
     <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="mb-3">
             <label class="form-label fw-bold">上传测试文件 (txt):</label>
             <input type="file" class="form-control" name="test_file" required accept=".txt">
