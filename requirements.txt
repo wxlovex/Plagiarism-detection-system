@@ -2,4 +2,5 @@ flask==2.0.3
 jieba==0.42.1
 scikit-learn==0.24.2
 gunicorn==21.2.0
+redis==4.5.1
 pymysql==0.10.1
