@@ -114,9 +114,9 @@ pipeline {
     agent any
 
     environment {
-        TARGET_HOST = 'hadoop103'     # 改成你的目标机（如果还是 hadoop103）
+        TARGET_HOST = 'hadoop103'
         TARGET_USER = 'user2201'
-        REDIS_HOST  = '192.168.119.102'   # 你的 Redis 地址
+        REDIS_HOST  = '192.168.119.102'
         REDIS_PORT  = '6379'
     }
 
