@@ -20,14 +20,15 @@
 # JWT_SECRET_KEY = 'your-super-secret-jwt-key-change-in-production'
 
 # filename: config.py
+# config.py
 import os
 
 DB_CONFIG = {
-    'host': 'localhost',
-    'port': 3306,
-    'user': 'root',
-    'password': '123456',
-    'database': 'plagiarism_db',
+    'host': os.getenv('MYSQL_HOST', 'localhost'),
+    'port': int(os.getenv('MYSQL_PORT', 3306)),
+    'user': os.getenv('MYSQL_USER', 'root'),
+    'password': os.getenv('MYSQL_PASSWORD', '123456'),
+    'database': os.getenv('MYSQL_DATABASE', 'plagiarism_db'),
     'charset': 'utf8mb4'
 }
 
@@ -41,6 +42,5 @@ REDIS_CONFIG = {
 
 JWT_SECRET_KEY = 'your-super-secret-jwt-key-change-in-production-2026'
 
-# Celery 配置
 CELERY_BROKER_URL = f'redis://{REDIS_CONFIG["host"]}:{REDIS_CONFIG["port"]}/{REDIS_CONFIG["db"]}'
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
