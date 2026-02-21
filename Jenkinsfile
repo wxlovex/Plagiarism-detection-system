@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_HOME = '/opt/plagiarism-app'
-        PYTHON = '/usr/bin/Python-3.12.12'
+        PYTHON = '/usr/bin/Python3.12'
         VENV = "${APP_HOME}/venv"
         TARGET_HOST = 'hadoop103'
         TARGET_USER = 'user2201'
