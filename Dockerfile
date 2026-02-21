@@ -39,4 +39,4 @@ RUN mkdir -p uploads && chmod 755 uploads
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "celery -A tasks worker --loglevel=info & gunicorn --bind 0.0.0.0:5000 --workers 3 app:app"]
+CMD ["sh", "-c", "cd /app && PYTHONPATH=. celery -A tasks worker --loglevel=info & gunicorn --bind 0.0.0.0:5000 --workers 3 app:app"]
