@@ -1,26 +1,24 @@
-# filename: tasks.py
+# tasks.py （完整替换）
 from celery import Celery
 from config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 from extractors import extract_text, extract_acknowledgements
-from app import app, db, compute_similarity, judge_plagiarism, get_templates_from_db  # 后面会定义
 import json
+from utils import compute_similarity, judge_plagiarism, get_templates_from_db  # ← 只导入 utils
 
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
-celery.conf.update(app.config)
 
 
 @celery.task(bind=True)
 def detect_plagiarism(self, test_filename, category, threshold, user_id):
     self.update_state(state='PROGRESS', meta={'progress': 10})
 
-    # 模拟读取（实际从 uploads 读取）
     with open(f'uploads/{test_filename}', 'r', encoding='utf-8') as f:
         text1 = f.read()
 
     text1 = extract_acknowledgements(text1)
     self.update_state(state='PROGRESS', meta={'progress': 30})
 
-    db_results = get_templates_from_db(category)  # 用 ORM 版本
+    db_results = get_templates_from_db(category)
     batch_results = []
     total = len(db_results)
 
@@ -48,9 +46,9 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
         'threshold': threshold
     }
 
-    # 保存到数据库
     from models import DetectionJob
-    job = DetectionJob.query.filter_by(id=self.request.id).first()  # task id 即 job id
+    from app import db
+    job = DetectionJob.query.get(self.request.id)
     if job:
         job.status = 'completed'
         job.result_json = json.dumps(result)

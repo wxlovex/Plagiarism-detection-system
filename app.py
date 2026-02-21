@@ -1,4 +1,4 @@
-# filename: app.py （前半部分）
+from utils import compute_similarity, judge_plagiarism, get_templates_from_db
 import os
 import json
 from datetime import datetime, timedelta
@@ -13,7 +13,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import DB_CONFIG, JWT_SECRET_KEY
 from models import db, User, Template, DetectionJob
 from extractors import extract_text, extract_acknowledgements
-from tasks import detect_plagiarism
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
