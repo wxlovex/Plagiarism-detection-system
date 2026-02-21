@@ -12,7 +12,7 @@ Flask-SQLAlchemy==2.5.1          # ← 唯一修改，彻底解决报错
 Flask-JWT-Extended==4.4.2
 Celery==5.2.0b3
 redis==4.3.6
-PyMuPDF==1.27.1
+PyMuPDF==1.19.6
 python-docx==1.1.2
 jieba==0.42.1
 scikit-learn==0.24.2
