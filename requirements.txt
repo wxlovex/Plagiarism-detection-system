@@ -7,7 +7,7 @@
 #Flask-JWT-Extended==4.4.2
 
 # filename: requirements.txt
-Flask==3.0.3
+flask==2.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-JWT-Extended==4.6.0
 Celery==5.4.0
