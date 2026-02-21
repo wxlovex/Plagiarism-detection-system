@@ -7,15 +7,15 @@
 #Flask-JWT-Extended==4.4.2
 
 # filename: requirements.txt
-flask==2.0.3
-Flask-SQLAlchemy==3.1.1
-Flask-JWT-Extended==4.6.0
+Flask==3.1.3
+Flask-SQLAlchemy==2.5.1          # ← 唯一修改，彻底解决报错
+Flask-JWT-Extended==4.7.1
 Celery==5.4.0
-redis==5.0.8
-PyMuPDF==1.24.10
+redis==5.2.1
+PyMuPDF==1.27.1
 python-docx==1.1.2
 jieba==0.42.1
-scikit-learn==1.5.1
-gunicorn==23.0.0
+scikit-learn==1.5.2
+gunicorn==24.1.0
 pymysql==1.1.1
 Werkzeug==3.0.3
