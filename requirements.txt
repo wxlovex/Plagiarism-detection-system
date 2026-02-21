@@ -9,13 +9,13 @@
 # filename: requirements.txt
 Flask==2.0.3
 Flask-SQLAlchemy==2.5.1          # ← 唯一修改，彻底解决报错
-Flask-JWT-Extended==4.7.1
+Flask-JWT-Extended==4.4.2
 Celery==5.4.0
-redis==5.2.1
+redis==4.3.6
 PyMuPDF==1.27.1
 python-docx==1.1.2
 jieba==0.42.1
-scikit-learn==1.5.2
-gunicorn==24.1.0
-pymysql==1.1.1
+scikit-learn==0.24.2
+gunicorn==21.2.0
+pymysql==0.10.1
 Werkzeug==3.0.3
