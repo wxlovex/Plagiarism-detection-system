@@ -24,13 +24,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# 系统依赖（PyMuPDF 需要）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libfontconfig1 libx11-6 libxext6 libsm6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     -i https://pypi.tuna.tsinghua.edu.cn/simple \
     --extra-index-url https://pypi.org/simple
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 COPY . .
 
@@ -38,5 +39,4 @@ RUN mkdir -p uploads && chmod 755 uploads
 
 EXPOSE 5000
 
-# 同时启动 Celery worker 和 Gunicorn（生产推荐用 supervisor，这里简化）
 CMD ["sh", "-c", "celery -A tasks worker --loglevel=info & gunicorn --bind 0.0.0.0:5000 --workers 3 app:app"]
