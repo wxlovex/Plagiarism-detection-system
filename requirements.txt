@@ -1,7 +1,21 @@
-flask==2.0.3
+#flask==2.0.3
+#jieba==0.42.1
+#scikit-learn==0.24.2
+#gunicorn==21.2.0
+#redis==4.3.6
+#pymysql==0.10.1
+#Flask-JWT-Extended==4.4.2
+
+# filename: requirements.txt
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-JWT-Extended==4.6.0
+Celery==5.4.0
+redis==5.0.8
+PyMuPDF==1.24.10
+python-docx==1.1.2
 jieba==0.42.1
-scikit-learn==0.24.2
-gunicorn==21.2.0
-redis==4.3.6
-pymysql==0.10.1
-Flask-JWT-Extended==4.4.2
+scikit-learn==1.5.1
+gunicorn==23.0.0
+pymysql==1.1.1
+Werkzeug==3.0.3

@@ -1,8 +1,30 @@
+# import os
+#
+# DB_CONFIG = {
+#     'host': 'localhost',
+#     'port': 3306,
+#     'user': 'root',
+#     'password': '123456',
+#     'database': 'plagiarism_db',
+#     'charset': 'utf8mb4'
+# }
+#
+# REDIS_CONFIG = {
+#     'host': os.getenv('REDIS_HOST', 'localhost'),
+#     'port': int(os.getenv('REDIS_PORT', 6379)),
+#     'password': os.getenv('REDIS_PASSWORD', ''),  # 若启用 auth
+#     'db': int(os.getenv('REDIS_DB', 0)),
+#     'decode_responses': True  # 返回字符串
+# }
+#
+# JWT_SECRET_KEY = 'your-super-secret-jwt-key-change-in-production'
+
+# filename: config.py
 import os
 
 DB_CONFIG = {
-    'host': '192.168.119.102',
-    'port': 3308,
+    'host': 'localhost',
+    'port': 3306,
     'user': 'root',
     'password': '123456',
     'database': 'plagiarism_db',
@@ -12,9 +34,13 @@ DB_CONFIG = {
 REDIS_CONFIG = {
     'host': os.getenv('REDIS_HOST', '192.168.119.102'),
     'port': int(os.getenv('REDIS_PORT', 6379)),
-    'password': os.getenv('REDIS_PASSWORD', ''),  # 若启用 auth
+    'password': os.getenv('REDIS_PASSWORD', ''),
     'db': int(os.getenv('REDIS_DB', 0)),
-    'decode_responses': True  # 返回字符串
+    'decode_responses': True
 }
 
-JWT_SECRET_KEY = 'your-super-secret-jwt-key-change-in-production'
+JWT_SECRET_KEY = 'your-super-secret-jwt-key-change-in-production-2026'
+
+# Celery 配置
+CELERY_BROKER_URL = f'redis://{REDIS_CONFIG["host"]}:{REDIS_CONFIG["port"]}/{REDIS_CONFIG["db"]}'
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
