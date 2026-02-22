@@ -26,7 +26,7 @@ import os
 DB_CONFIG = {
     'host': os.getenv('MYSQL_HOST', '192.168.119.102'),
     'port': int(os.getenv('MYSQL_PORT', 3308)),   # ← 改成 3308
-    'user': os.getenv('MYSQL_USER', 'root'),
+    'user': os.getenv('MYSQL_USER', 'plagiarism'),
     'password': os.getenv('MYSQL_PASSWORD', '123456'),
     'database': os.getenv('MYSQL_DATABASE', 'plagiarism_db'),
     'charset': 'utf8mb4'
