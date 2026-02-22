@@ -69,6 +69,23 @@
         </div>
     </div>
 </nav>
+
+{% if status == 'pending' %}
+<div class="alert alert-info text-center">
+    <h4>🔄 检测正在进行中，请稍等...</h4>
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-3">任务ID: <strong>{{ task_id }}</strong></p>
+    <p>页面将每 3 秒自动刷新一次...</p>
+</div>
+
+<script>
+    // 自动轮询
+    setTimeout(function() {
+        location.reload();
+    }, 3000);
+</script>
+{% endif %}
+
 <div class="container">
     <h1 class="text-center mb-4" style="color: #007bff;">毕业论文致谢抄袭检测系统</h1>
     {% with messages = get_flashed_messages() %}
@@ -81,7 +98,7 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <div class="mb-3">
             <label class="form-label fw-bold">上传测试文件 (txt):</label>

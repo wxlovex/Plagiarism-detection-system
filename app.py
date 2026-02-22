@@ -163,22 +163,35 @@ def index():
 
     return render_template('index.html', current_user=current_user)
 
-@app.route('/status/<task_id>')
+@app.route('/status/<task_id>', methods=['GET'])  # ← 明确只允许 GET
 @jwt_required()
 def status(task_id):
     job = DetectionJob.query.get(task_id)
     if not job:
-        return jsonify({'status': 'not_found'})
+        flash('任务不存在！')
+        return redirect(url_for('index'))
+
+    current_user = get_jwt_identity()
+
     if job.status == 'completed':
         result = json.loads(job.result_json)
         return render_template('index.html',
                                results=result['results'],
                                stats=result['stats'],
-                               current_user=get_jwt_identity(),
-                               task_id=task_id)
-    elif job.status == 'pending' or job.status == 'running':
-        return jsonify({'status': job.status, 'progress': '进行中...'})
-    return jsonify({'status': job.status})
+                               current_user=current_user,
+                               task_id=task_id,
+                               status='completed')   # ← 传递状态
+
+    elif job.status in ('pending', 'running'):
+        # 返回等待页面（带自动刷新）
+        return render_template('index.html',
+                               current_user=current_user,
+                               task_id=task_id,
+                               status='pending')   # ← 关键
+
+    else:
+        flash(f'任务异常：{job.status}')
+        return redirect(url_for('index'))
 
 # 创建表（第一次运行）
 # with app.app_context():
