@@ -161,6 +161,7 @@ pipeline {
                     sudo -u ${TARGET_USER} ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
                         docker load -i /tmp/app.tar
                         docker rm -f plagiarism-app || true
+                        docker rm -f $(docker ps -aq) 2>/dev/null || true
                         docker run -d \
                             -p 5000:5000 \
                             --restart=always \
@@ -172,7 +173,6 @@ pipeline {
                             -e MYSQL_USER=root \
                             -e MYSQL_PASSWORD=123456 \
                             -e MYSQL_DATABASE=plagiarism_db \
-
                             plagiarism-detection:latest
                         rm /tmp/app.tar
                         echo '✅ 部署成功！访问 http://${TARGET_HOST}:5000'
