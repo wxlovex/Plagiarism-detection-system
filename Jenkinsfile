@@ -162,17 +162,17 @@ pipeline {
                         docker load -i /tmp/app.tar
                         docker rm -f plagiarism-app || true
                         docker run -d \
-                            -p 5000:5000 \
-                            --restart=always \
-                            --name plagiarism-app \
-                            -e REDIS_HOST=${REDIS_HOST} \
-                            -e REDIS_PORT=${REDIS_PORT} \
-                            -e MYSQL_HOST=192.168.119.102 \
-                            -e MYSQL_PORT=3306 \
-                            -e MYSQL_USER=root \
-                            -e MYSQL_PASSWORD=123456 \
-                            -e MYSQL_DATABASE=plagiarism_db \
-                            plagiarism-detection:latest
+                          -p 5000:5000 \
+                          --name plagiarism-app \
+                          --restart=always \
+                          -e MYSQL_HOST=192.168.119.102 \
+                          -e MYSQL_PORT=3308 \
+                          -e MYSQL_USER=plagiarism \
+                          -e MYSQL_PASSWORD=123456 \
+                          -e MYSQL_DATABASE=plagiarism_db \
+                          -e REDIS_HOST=192.168.119.102 \
+                          -e REDIS_PORT=6379 \
+                          plagiarism-detection:latest
                         rm /tmp/app.tar
                         echo '✅ 部署成功！访问 http://${TARGET_HOST}:5000'
                     "
