@@ -161,7 +161,6 @@ pipeline {
                     sudo -u ${TARGET_USER} ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
                         docker load -i /tmp/app.tar
                         docker rm -f plagiarism-app || true
-                        docker rm -f $(docker ps -aq) 2>/dev/null || true
                         docker run -d \
                             -p 5000:5000 \
                             --restart=always \

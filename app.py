@@ -1,4 +1,5 @@
 from utils import compute_similarity, judge_plagiarism, get_templates_from_db
+from tasks import detect_plagiarism
 import os
 import json
 from datetime import datetime, timedelta
@@ -13,6 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from config import DB_CONFIG, JWT_SECRET_KEY
 from models import db, User, Template, DetectionJob
 from extractors import extract_text, extract_acknowledgements
+
 
 
 app = Flask(__name__)
