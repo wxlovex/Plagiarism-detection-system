@@ -123,11 +123,14 @@ def logout():
 def index():
     current_user = get_jwt_identity()
     if request.method == 'POST':
-        test_file = request.files['test_file']
-        category = request.form['folder']
-        threshold = float(request.form['threshold'])
+        test_file = request.files.get('test_file')
+        category = request.form.get('folder')
+        try:
+            threshold = float(request.form.get('threshold', 0.7))
+        except:
+            threshold = 0.7
 
-        if not test_file or not category:
+        if not test_file or not test_file.filename or not category:
             flash('请上传文件并选择模板库！')
             return render_template('index.html', current_user=current_user)
 
@@ -135,12 +138,17 @@ def index():
         filepath = os.path.join('uploads', test_file.filename)
         test_file.save(filepath)
 
-        # 创建任务记录
         user = User.query.filter_by(username=current_user).first()
+        if not user:
+            flash('用户异常')
+            return redirect(url_for('logout'))
+
+        # 只调用一次 delay（关键修复）
         task = detect_plagiarism.delay(test_file.filename, category, threshold, user.id)
 
+        # 创建记录
         job = DetectionJob(
-            id=task.id,  # ← 用 task.id 作为主键（字符串）
+            id=task.id,
             user_id=user.id,
             test_filename=test_file.filename,
             category=category,
@@ -150,13 +158,7 @@ def index():
         db.session.add(job)
         db.session.commit()
 
-        # 异步启动检测
-        task = detect_plagiarism.delay(test_file.filename, category, threshold, user.id)
-        # 把 task.id 关联到 job
-        job.id = task.id   # Celery task id 即我们用的
-        db.session.commit()
-
-        flash(f'检测任务已提交！任务ID: {task.id}，请稍后刷新或访问 /status/{task.id}')
+        flash(f'检测任务已提交！任务ID: {task.id}')
         return redirect(url_for('status', task_id=task.id))
 
     return render_template('index.html', current_user=current_user)
