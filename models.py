@@ -23,11 +23,11 @@ class Template(db.Model):
 
 class DetectionJob(db.Model):
     __tablename__ = 'detection_jobs'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True)   # ← 改成 String，支持 UUID
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     test_filename = db.Column(db.String(200))
     category = db.Column(db.String(50))
     threshold = db.Column(db.Float, default=0.7)
-    status = db.Column(db.String(20), default='pending')  # pending / running / completed / failed
-    result_json = db.Column(db.Text)  # 存 JSON 字符串
+    status = db.Column(db.String(20), default='pending')
+    result_json = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

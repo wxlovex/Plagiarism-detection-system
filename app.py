@@ -137,7 +137,10 @@ def index():
 
         # 创建任务记录
         user = User.query.filter_by(username=current_user).first()
+        task = detect_plagiarism.delay(test_file.filename, category, threshold, user.id)
+
         job = DetectionJob(
+            id=task.id,  # ← 用 task.id 作为主键（字符串）
             user_id=user.id,
             test_filename=test_file.filename,
             category=category,

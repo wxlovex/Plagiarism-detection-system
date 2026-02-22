@@ -46,12 +46,14 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
         'threshold': threshold
     }
 
+    # 关键修复：使用 app context + 用 task.id 作为字符串主键
+    from app import app, db
     from models import DetectionJob
-    from app import db
-    job = DetectionJob.query.get(self.request.id)
-    if job:
-        job.status = 'completed'
-        job.result_json = json.dumps(result)
-        db.session.commit()
+    with app.app_context():
+        job = DetectionJob.query.get(self.request.id)
+        if job:
+            job.status = 'completed'
+            job.result_json = json.dumps(result)
+            db.session.commit()
 
     return result
