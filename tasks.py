@@ -1,22 +1,24 @@
+# tasks.py （最终修复版 - 彻底解决循环导入）
 from celery import Celery
 from config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 from extractors import extract_acknowledgements
 import json
 from utils import compute_similarity, judge_plagiarism
 
-# 关键：导入 app 和模型
-from app import app, db
-from models import DetectionJob, Template
-
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
+
 
 @celery.task(bind=True)
 def detect_plagiarism(self, test_filename, category, threshold, user_id):
     self.update_state(state='PROGRESS', meta={'progress': 10})
 
     try:
-        with app.app_context():   # ← 所有 db 操作必须在这里
-            # 读取文件
+        # 关键修复：函数内部 lazy import，彻底打破循环导入
+        from app import app, db
+        from models import DetectionJob, Template
+
+        with app.app_context():
+            # 读取上传的文件
             with open(f'uploads/{test_filename}', 'r', encoding='utf-8') as f:
                 text1 = f.read()
 
@@ -25,6 +27,9 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
 
             # 获取模板
             db_results = Template.query.filter_by(category=category).all()
+            if not db_results:
+                raise ValueError(f"模板库 '{category}' 中没有数据！请先在后台添加模板。")
+
             templates = [(t.title, t.content) for t in db_results]
 
             batch_results = []
@@ -67,10 +72,16 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
         return result
 
     except Exception as e:
-        with app.app_context():
-            job = DetectionJob.query.get(self.request.id)
-            if job:
-                job.status = 'failed'
-                job.result_json = json.dumps({"error": str(e)})
-                db.session.commit()
+        print(f"【检测任务异常】: {str(e)}")
+        try:
+            from app import app, db
+            from models import DetectionJob
+            with app.app_context():
+                job = DetectionJob.query.get(self.request.id)
+                if job:
+                    job.status = 'failed'
+                    job.result_json = json.dumps({"error": str(e)})
+                    db.session.commit()
+        except:
+            pass
         raise
