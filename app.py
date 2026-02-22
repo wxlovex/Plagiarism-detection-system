@@ -176,8 +176,8 @@ def status(task_id):
     return jsonify({'status': job.status})
 
 # 创建表（第一次运行）
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
