@@ -141,7 +141,7 @@
                 <td>{{ "%.4f"|format(row[1]) }}</td>
                 <td>{{ row[2] }}</td>
                 <td>
-                    <span class="badge {% if aigc_score(row[0] + row[1] if 'row' in locals() else '') > 70 %}bg-danger{% elif aigc_score(...) > 45 %}bg-warning{% else %}bg-success{% endif %}">
+                    <span class="badge {% if aigc_score(row[0]) > 70 %}bg-danger{% elif aigc_score(row[0]) > 45 %}bg-warning{% else %}bg-success{% endif %}">
                         AI生成概率: {{ aigc_score(row[0]) }}%
                     </span>
                 </td>
