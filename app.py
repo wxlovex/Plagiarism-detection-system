@@ -1,3 +1,4 @@
+from detector import read_file
 from utils import compute_similarity, judge_plagiarism, get_templates_from_db, aigc_score
 from tasks import detect_plagiarism
 import os
