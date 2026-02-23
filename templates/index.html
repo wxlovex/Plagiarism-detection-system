@@ -131,6 +131,7 @@
                 <th>参考文件</th>
                 <th>相似度</th>
                 <th>判断</th>
+                <th>AI生成概率</th>
             </tr>
             </thead>
             <tbody>
@@ -139,6 +140,11 @@
                 <td>{{ row[0] }}</td>
                 <td>{{ "%.4f"|format(row[1]) }}</td>
                 <td>{{ row[2] }}</td>
+                <td>
+                    <span class="badge {% if aigc_score(row[0] + row[1] if 'row' in locals() else '') > 70 %}bg-danger{% elif aigc_score(...) > 45 %}bg-warning{% else %}bg-success{% endif %}">
+                        AI生成概率: {{ aigc_score(row[0]) }}%
+                    </span>
+                </td>
             </tr>
             {% endfor %}
             </tbody>
