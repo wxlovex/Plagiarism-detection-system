@@ -71,46 +71,18 @@
 </nav>
 
 {% if status == 'pending' %}
-<div class="alert alert-info text-center" id="progress-area">
+<div class="alert alert-info text-center mt-4">
     <h4>🔄 检测正在进行中，请稍等...</h4>
-    <div class="progress" style="height: 28px; margin: 15px 0;">
-        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-             role="progressbar" style="width: 10%;" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100">
-            <span id="progress-text" class="fw-bold">10%</span>
-        </div>
-    </div>
-    <small id="progress-status" class="text-muted">正在准备检测任务...</small>
-    <p class="mt-2">任务ID: <strong>{{ task_id }}</strong></p>
+    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+    <!-- <p class="mb-1">任务ID: <strong>{{ task_id }}</strong></p> -->
+    <small class="text-muted">页面将每 2 秒自动刷新一次，请不要关闭此页面</small>
 </div>
 
 <script>
-    // 实时进度条（AJAX 轮询）
-    let taskId = "{{ task_id }}";
-    function updateProgress() {
-        fetch(`/status/${taskId}`)
-            .then(res => res.json())
-            .then(data => {
-                let progress = data.progress || 10;
-                document.getElementById('progress-bar').style.width = progress + '%';
-                document.getElementById('progress-bar').setAttribute('aria-valuenow', progress);
-                document.getElementById('progress-text').textContent = progress + '%';
-                document.getElementById('progress-status').textContent = data.status === 'PROGRESS' ? '正在比对模板...' : '检测进行中...';
-
-                if (data.status === 'completed') {
-                    location.reload();   // 完成后自动刷新显示报告
-                } else if (data.status === 'FAILURE') {
-                    alert('检测失败，请重试！');
-                } else {
-                    setTimeout(updateProgress, 800);  // 每800ms更新一次
-                }
-            })
-            .catch(err => {
-                console.log("进度更新出错，继续尝试...");
-                setTimeout(updateProgress, 2000);
-            });
-    }
-    // 启动轮询
-    setTimeout(updateProgress, 500);
+    // 自动刷新（最简单、最稳，不改后端代码）
+    setTimeout(function() {
+        location.reload();
+    }, 2000);
 </script>
 {% endif %}
 
