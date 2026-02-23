@@ -133,23 +133,27 @@ def index():
         except:
             threshold = 0.7
 
-        # 优先使用直接输入的文本
+        # ==================== 优先处理文本框输入 ====================
         if direct_text:
             text1 = extract_acknowledgements(direct_text)
             test_filename = f"direct_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            # 保存为临时文件，供后续任务使用
             os.makedirs('uploads', exist_ok=True)
             filepath = os.path.join('uploads', test_filename)
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(text1)
+            flash('已使用文本框内容进行检测（文件上传已忽略）')
+
+        # ==================== 如果没有文本框，则处理文件上传 ====================
         elif test_file and test_file.filename:
             os.makedirs('uploads', exist_ok=True)
             test_filename = test_file.filename
             filepath = os.path.join('uploads', test_filename)
             test_file.save(filepath)
             text1 = extract_acknowledgements(read_file(filepath))
+            flash('已使用上传文件进行检测')
+
         else:
-            flash('请上传文件或在文本框中输入内容！')
+            flash('请上传文件 或 在文本框中输入内容！')
             return render_template('index.html', current_user=current_user)
 
         if not category:
