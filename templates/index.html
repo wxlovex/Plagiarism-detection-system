@@ -104,6 +104,14 @@
             <label class="form-label fw-bold">上传测试文件 (txt):</label>
             <input type="file" class="form-control" name="test_file" required accept=".txt">
         </div>
+        <!-- 新增：直接输入文本模式 -->
+        <hr class="my-4">
+        <div class="mb-3">
+            <label class="form-label fw-bold">或直接粘贴致谢文本（推荐）：</label>
+            <textarea class="form-control" name="direct_text" rows="6"
+                      placeholder="在这里直接粘贴论文致谢部分内容..."></textarea>
+            <small class="form-text text-muted">如果填写了此文本框，系统将优先使用它进行检测（文件上传可留空）</small>
+        </div>
         <div class="mb-3">
             <label class="form-label fw-bold">选择参考模板库：</label>
             <select class="form-select" name="folder" required>

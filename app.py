@@ -124,6 +124,7 @@ def logout():
 def index():
     current_user = get_jwt_identity()
     if request.method == 'POST':
+        direct_text = request.form.get('direct_text', '').strip()
         test_file = request.files.get('test_file')
         category = request.form.get('folder')
         try:
@@ -131,27 +132,40 @@ def index():
         except:
             threshold = 0.7
 
-        if not test_file or not test_file.filename or not category:
-            flash('请上传文件并选择模板库！')
+        # 优先使用直接输入的文本
+        if direct_text:
+            text1 = extract_acknowledgements(direct_text)
+            test_filename = f"direct_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            # 保存为临时文件，供后续任务使用
+            os.makedirs('uploads', exist_ok=True)
+            filepath = os.path.join('uploads', test_filename)
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(text1)
+        elif test_file and test_file.filename:
+            os.makedirs('uploads', exist_ok=True)
+            test_filename = test_file.filename
+            filepath = os.path.join('uploads', test_filename)
+            test_file.save(filepath)
+            text1 = extract_acknowledgements(read_file(filepath))
+        else:
+            flash('请上传文件或在文本框中输入内容！')
             return render_template('index.html', current_user=current_user)
 
-        os.makedirs('uploads', exist_ok=True)
-        filepath = os.path.join('uploads', test_file.filename)
-        test_file.save(filepath)
+        if not category:
+            flash('请选择参考模板库！')
+            return render_template('index.html', current_user=current_user)
 
         user = User.query.filter_by(username=current_user).first()
         if not user:
             flash('用户异常')
             return redirect(url_for('logout'))
 
-        # 只调用一次 delay（关键修复）
-        task = detect_plagiarism.delay(test_file.filename, category, threshold, user.id)
+        task = detect_plagiarism.delay(test_filename, category, threshold, user.id)
 
-        # 创建记录
         job = DetectionJob(
             id=task.id,
             user_id=user.id,
-            test_filename=test_file.filename,
+            test_filename=test_filename,
             category=category,
             threshold=threshold,
             status='pending'
