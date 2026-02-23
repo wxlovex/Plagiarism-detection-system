@@ -1,4 +1,4 @@
-from utils import compute_similarity, judge_plagiarism, get_templates_from_db
+from utils import compute_similarity, judge_plagiarism, get_templates_from_db, aigc_score
 from tasks import detect_plagiarism
 import os
 import json
@@ -28,6 +28,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 jwt = JWTManager(app)
+app.jinja_env.globals.update(aigc_score=aigc_score)
 
 # 预处理函数（保持不变）
 def clean_text(text):
