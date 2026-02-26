@@ -133,8 +133,8 @@ def index():
         except:
             threshold = 0.7
 
-        # ==================== 绝对优先：文本框 ====================
-        if direct_text and len(direct_text) > 10:  # 防止空行或极短文本
+        # ==================== 绝对优先：文本框（只要有有效内容就用） ====================
+        if direct_text and len(direct_text) > 10:
             text1 = extract_acknowledgements(direct_text)
             test_filename = f"direct_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             os.makedirs('uploads', exist_ok=True)
@@ -144,7 +144,7 @@ def index():
             flash('✅ 已使用文本框内容进行检测（文件上传已忽略）')
 
         # ==================== 文本框为空，则处理文件上传 ====================
-        elif test_file and test_file.filename and test_file.filename.strip():
+        elif test_file and test_file.filename and test_file.filename.strip() != '':
             os.makedirs('uploads', exist_ok=True)
             test_filename = test_file.filename
             filepath = os.path.join('uploads', test_filename)
