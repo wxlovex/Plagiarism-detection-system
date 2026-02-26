@@ -133,31 +133,32 @@ def index():
         except:
             threshold = 0.7
 
-        # ==================== 优先处理文本框输入 ====================
+        # ==================== 优先级：文本框 > 文件上传 ====================
         if direct_text:
+            # 直接使用文本框内容
             text1 = extract_acknowledgements(direct_text)
             test_filename = f"direct_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
             os.makedirs('uploads', exist_ok=True)
             filepath = os.path.join('uploads', test_filename)
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(text1)
-            flash('已使用文本框内容进行检测（文件上传已忽略）')
+            flash('✅ 已使用文本框内容进行检测（文件上传已忽略）')
 
-        # ==================== 如果没有文本框，则处理文件上传 ====================
         elif test_file and test_file.filename:
+            # 使用上传的文件
             os.makedirs('uploads', exist_ok=True)
             test_filename = test_file.filename
             filepath = os.path.join('uploads', test_filename)
             test_file.save(filepath)
             text1 = extract_acknowledgements(read_file(filepath))
-            flash('已使用上传文件进行检测')
+            flash('✅ 已使用上传文件进行检测')
 
         else:
-            flash('请上传文件 或 在文本框中输入内容！')
+            flash('❌ 请上传文件 或 在文本框中输入内容！')
             return render_template('index.html', current_user=current_user)
 
         if not category:
-            flash('请选择参考模板库！')
+            flash('❌ 请选择参考模板库！')
             return render_template('index.html', current_user=current_user)
 
         user = User.query.filter_by(username=current_user).first()
@@ -165,8 +166,10 @@ def index():
             flash('用户异常')
             return redirect(url_for('logout'))
 
+        # 提交异步任务
         task = detect_plagiarism.delay(test_filename, category, threshold, user.id)
 
+        # 保存任务记录
         job = DetectionJob(
             id=task.id,
             user_id=user.id,
@@ -178,7 +181,7 @@ def index():
         db.session.add(job)
         db.session.commit()
 
-        flash(f'检测任务已提交！任务ID: {task.id}')
+        flash(f'✅ 检测任务已提交！任务ID: {task.id}')
         return redirect(url_for('status', task_id=task.id))
 
     return render_template('index.html', current_user=current_user)
