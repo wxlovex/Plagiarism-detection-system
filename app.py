@@ -125,7 +125,6 @@ def logout():
 def index():
     current_user = get_jwt_identity()
     if request.method == 'POST':
-        direct_text = request.form.get('direct_text', '').strip()
         test_file = request.files.get('test_file')
         category = request.form.get('folder')
         try:
@@ -133,32 +132,18 @@ def index():
         except:
             threshold = 0.7
 
-        # ==================== 绝对优先：文本框（只要有有效内容就用） ====================
-        if direct_text and len(direct_text) > 10:
-            text1 = extract_acknowledgements(direct_text)
-            test_filename = f"direct_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            os.makedirs('uploads', exist_ok=True)
-            filepath = os.path.join('uploads', test_filename)
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(text1)
-            flash('✅ 已使用文本框内容进行检测（文件上传已忽略）')
-
-        # ==================== 文本框为空，则处理文件上传 ====================
-        elif test_file and test_file.filename and test_file.filename.strip() != '':
-            os.makedirs('uploads', exist_ok=True)
-            test_filename = test_file.filename
-            filepath = os.path.join('uploads', test_filename)
-            test_file.save(filepath)
-            text1 = extract_acknowledgements(read_file(filepath))
-            flash('✅ 已使用上传文件进行检测')
-
-        else:
-            flash('❌ 请上传文件 或 在文本框中输入至少10个字符的内容！')
+        if not test_file or not test_file.filename:
+            flash('❌ 请上传文件！')
             return render_template('index.html', current_user=current_user)
 
         if not category:
             flash('❌ 请选择参考模板库！')
             return render_template('index.html', current_user=current_user)
+
+        os.makedirs('uploads', exist_ok=True)
+        test_filename = test_file.filename
+        filepath = os.path.join('uploads', test_filename)
+        test_file.save(filepath)
 
         user = User.query.filter_by(username=current_user).first()
         if not user:
