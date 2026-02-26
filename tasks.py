@@ -33,12 +33,27 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
             templates = [(t.title, t.content) for t in db_results]
 
             batch_results = []
+            matched_segments = []  # 新增：用于并排高亮
             total = len(templates)
 
             for i, (title, content) in enumerate(templates):
                 score = compute_similarity(text1, content)
                 judgment = judge_plagiarism(score, threshold)
+
+                # 新增：简单高亮匹配部分（实际生产可换成更精准的 diff 算法）
+                highlighted_user = text1.replace(content[:50],
+                                                 f'<mark style="background:#ffebee;color:#d32f2f;">{content[:50]}</mark>') if score > 0.3 else text1
+                highlighted_template = content.replace(content[:50],
+                                                       f'<mark style="background:#ffebee;color:#d32f2f;">{content[:50]}</mark>')
+
                 batch_results.append((title, score, judgment))
+                matched_segments.append({
+                    'title': title,
+                    'score': score,
+                    'judgment': judgment,
+                    'user_text': highlighted_user,
+                    'template_text': highlighted_template
+                })
 
                 progress = 30 + int(60 * (i + 1) / total) if total > 0 else 90
                 self.update_state(state='PROGRESS', meta={'progress': progress})
@@ -59,7 +74,8 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 'results': batch_results,
                 'stats': stats,
                 'total': len(batch_results),
-                'threshold': threshold
+                'threshold': threshold,
+                'matched_segments': matched_segments  # ← 新增
             }
 
             # 保存结果

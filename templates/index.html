@@ -122,6 +122,28 @@
         </div>
     </form>
     {% if results %}
+
+    {% if matched_segments %}
+    <hr class="my-5">
+    <h3 class="text-center mb-4">🔍 相似段落并排对比</h3>
+
+    {% for seg in matched_segments %}
+    <div class="row mb-5 border rounded p-3">
+        <div class="col-md-6">
+            <h5 class="text-danger">你的原文</h5>
+            <pre class="bg-light p-3" style="white-space: pre-wrap;">{{ seg.user_text | safe }}</pre>
+        </div>
+        <div class="col-md-6">
+            <h5 class="text-danger">相似模板：{{ seg.title }}</h5>
+            <pre class="bg-light p-3" style="white-space: pre-wrap;">{{ seg.template_text | safe }}</pre>
+            <p class="text-end">
+                <span class="badge bg-danger">{{ "%.1f"|format(seg.score * 100) }}% 相似</span>
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
     <hr class="my-4">
     <h2 class="text-center mb-3">检测报告</h2>
     <div class="table-responsive">

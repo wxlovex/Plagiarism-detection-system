@@ -181,11 +181,12 @@ def status(task_id):
     if job.status == 'completed':
         result = json.loads(job.result_json)
         return render_template('index.html',
-                               results=result['results'],
-                               stats=result['stats'],
+                               results=result.get('results', []),
+                               stats=result.get('stats', {}),
+                               matched_segments=result.get('matched_segments', []),
                                current_user=current_user,
                                task_id=task_id,
-                               status='completed')   # ← 传递状态
+                               status='completed')
 
     elif job.status in ('pending', 'running'):
         # 返回等待页面（带自动刷新）
