@@ -180,11 +180,12 @@ def status(task_id):
     current_user = get_jwt_identity()
     task = detect_plagiarism.AsyncResult(task_id)
 
-    # ==================== JSON 请求（JS轮询用） ====================
+    # 1. JSON 请求（JS轮询必须走这里）
     if request.args.get('json') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if (task.state in ('SUCCESS', 'completed') or
             job.status == 'completed' or
-            task.ready()):
+            task.ready() or
+            job.result_json):   # ← 新增：只要数据库有结果就当完成
             try:
                 result = json.loads(job.result_json) if job.result_json else {}
             except:
@@ -204,16 +205,16 @@ def status(task_id):
         else:
             return jsonify({'status': task.state or 'unknown', 'progress': 30})
 
-    # ==================== 普通浏览器访问 → HTML页面 ====================
+    # 2. 普通浏览器访问 → HTML页面
     if (task.state in ('SUCCESS', 'completed') or
         job.status == 'completed' or
-        task.ready()):
-        # 已完成
+        task.ready() or
+        job.result_json):   # ← 新增：数据库优先判断
         try:
             result = json.loads(job.result_json) if job.result_json else {}
-        except Exception as e:
+        except:
             result = {}
-            flash(f'结果解析失败: {str(e)}')
+            flash('结果解析失败，请重试')
 
         return render_template('index.html',
                                current_user=current_user,
@@ -222,7 +223,7 @@ def status(task_id):
                                matched_segments=result.get('matched_segments', []),
                                status='completed')
     else:
-        # 进行中 → 显示进度条
+        # 显示进度条页面
         return render_template('index.html',
                                current_user=current_user,
                                status='pending',
