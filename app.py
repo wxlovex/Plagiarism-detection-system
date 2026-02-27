@@ -171,6 +171,9 @@ def index():
 @app.route('/status/<task_id>', methods=['GET'])  # ← 明确只允许 GET
 @jwt_required()
 def status(task_id):
+    from models import DetectionJob
+    from tasks import detect_plagiarism   # 导入 Celery task
+
     job = DetectionJob.query.get(task_id)
     if not job:
         flash('任务不存在！')
@@ -178,8 +181,11 @@ def status(task_id):
 
     current_user = get_jwt_identity()
 
-    if job.status == 'completed':
-        result = json.loads(job.result_json)
+    # 优先从 Celery 获取实时状态（最重要修复）
+    task = detect_plagiarism.AsyncResult(task_id)
+
+    if task.state == 'SUCCESS' or job.status == 'completed':
+        result = json.loads(job.result_json) if job.result_json else {}
         return render_template('index.html',
                                results=result.get('results', []),
                                stats=result.get('stats', {}),
@@ -188,20 +194,23 @@ def status(task_id):
                                task_id=task_id,
                                status='completed')
 
-    elif job.status in ('pending', 'running'):
-        # 返回等待页面（带自动刷新）
+    elif task.state == 'PROGRESS':
+        progress = task.info.get('progress', 30) if isinstance(task.info, dict) else 30
         return render_template('index.html',
                                current_user=current_user,
                                task_id=task_id,
-                               status='pending')   # ← 关键
+                               status='pending',
+                               progress=progress)   # 新增 progress 传递
+
+    elif task.state == 'PENDING':
+        return render_template('index.html',
+                               current_user=current_user,
+                               task_id=task_id,
+                               status='pending')
 
     else:
-        flash(f'任务异常：{job.status}')
+        flash(f'任务异常：{task.state}')
         return redirect(url_for('index'))
-
-# 创建表（第一次运行）
-# with app.app_context():
-#     db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
