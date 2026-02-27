@@ -183,12 +183,12 @@ def status(task_id):
     current_user = get_jwt_identity()
     task = detect_plagiarism.AsyncResult(task_id)
 
-    # 1. JSON 请求（JS轮询必须走这里）
+    # 优先判断数据库是否有结果（应对超快完成任务）
+    has_result = bool(job.result_json and job.status == 'completed')
+
+    # === JSON 请求（JS轮询）===
     if request.args.get('json') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        if (task.state in ('SUCCESS', 'completed') or
-            job.status == 'completed' or
-            task.ready() or
-            job.result_json):   # ← 新增：只要数据库有结果就当完成
+        if has_result or task.state in ('SUCCESS', 'completed') or task.ready():
             try:
                 result = json.loads(job.result_json) if job.result_json else {}
             except:
@@ -208,11 +208,8 @@ def status(task_id):
         else:
             return jsonify({'status': task.state or 'unknown', 'progress': 30})
 
-    # 2. 普通浏览器访问 → HTML页面
-    if (task.state in ('SUCCESS', 'completed') or
-        job.status == 'completed' or
-        task.ready() or
-        job.result_json):   # ← 新增：数据库优先判断
+    # === 普通浏览器访问 → HTML ===
+    if has_result or task.state in ('SUCCESS', 'completed') or task.ready():
         try:
             result = json.loads(job.result_json) if job.result_json else {}
         except:

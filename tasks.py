@@ -11,6 +11,8 @@ celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND
 @celery.task(bind=True)
 def detect_plagiarism(self, test_filename, category, threshold, user_id):
     self.update_state(state='PROGRESS', meta={'progress': 10})
+    import time
+    time.sleep(1.2)
 
     try:
         from app import app, db
