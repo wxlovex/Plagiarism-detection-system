@@ -84,7 +84,7 @@
 </div>
 
 <script>
-    // 加强版自动刷新 + 完成自动跳转报告
+    // 最终加强版自动刷新（确保检测完成后自动显示报告和高亮对比）
     let taskId = "{{ task_id }}";
     let attempts = 0;
     const maxAttempts = 60;   // 最多等 60 次（约 48 秒）
@@ -94,17 +94,16 @@
         fetch(`/status/${taskId}`)
             .then(res => res.json())
             .then(data => {
-                // 更新进度条
                 let progress = data.progress || 30;
                 document.getElementById('progress-bar').style.width = progress + '%';
                 document.getElementById('progress-bar').setAttribute('aria-valuenow', progress);
                 document.getElementById('progress-text').textContent = progress + '%';
 
                 if (data.status === 'completed' || data.status === 'SUCCESS') {
-                    // 检测完成，自动刷新页面显示报告
+                    // 检测完成，自动刷新页面显示报告和高亮对比
                     location.reload();
                 } else if (attempts > maxAttempts) {
-                    alert('检测时间过长，请手动刷新页面');
+                    alert('检测时间过长，请手动刷新页面查看结果');
                 } else {
                     setTimeout(updateProgress, 800);  // 每800ms更新一次
                 }

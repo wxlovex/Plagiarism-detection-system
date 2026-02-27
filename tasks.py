@@ -40,19 +40,28 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 score = compute_similarity(text1, content)
                 judgment = judge_plagiarism(score, threshold)
 
-                # 新增：简单高亮匹配部分（实际生产可换成更精准的 diff 算法）
-                highlighted_user = text1.replace(content[:50],
-                                                 f'<mark style="background:#ffebee;color:#d32f2f;">{content[:50]}</mark>') if score > 0.3 else text1
-                highlighted_template = content.replace(content[:50],
-                                                       f'<mark style="background:#ffebee;color:#d32f2f;">{content[:50]}</mark>')
+                # 安全高亮（支持长文本，截取前200字符，避免渲染过慢 + 特殊字符转义）
+                user_text = text1[:200] if len(text1) > 200 else text1
+                template_text = content[:200] if len(content) > 200 else content
+
+                # 转义特殊字符，避免 Jinja2 渲染错误
+                user_text = user_text.replace('<', '&lt;').replace('>', '&gt;')
+                template_text = template_text.replace('<', '&lt;').replace('>', '&gt;')
+
+                if score > 0.3:
+                    # 简单高亮前50字符
+                    user_text = user_text.replace(user_text[:50],
+                                                  f'<mark style="background:#ffebee;color:#d32f2f;">{user_text[:50]}</mark>')
+                    template_text = template_text.replace(template_text[:50],
+                                                          f'<mark style="background:#ffebee;color:#d32f2f;">{template_text[:50]}</mark>')
 
                 batch_results.append((title, score, judgment))
                 matched_segments.append({
                     'title': title,
                     'score': score,
                     'judgment': judgment,
-                    'user_text': highlighted_user,
-                    'template_text': highlighted_template
+                    'user_text': user_text,
+                    'template_text': template_text
                 })
 
                 progress = 30 + int(60 * (i + 1) / total) if total > 0 else 90
