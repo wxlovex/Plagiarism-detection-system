@@ -174,16 +174,17 @@ def index():
 def status(task_id):
     job = DetectionJob.query.get(task_id)
     if not job:
-        if request.is_json or request.args.get('json') == '1':
-            return jsonify({'status': 'not_found', 'progress': 0})
-        return render_template('index.html', current_user=get_jwt_identity(), error="任务不存在")
+        flash(f'❌ 任务 {task_id} 不存在或已过期')
+        return redirect(url_for('index'))
 
     current_user = get_jwt_identity()
     task = detect_plagiarism.AsyncResult(task_id)
 
-    # AJAX/JS轮询 或 ?json=1 时返回JSON（保持原有逻辑）
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('json') == '1':
-        if (task.state in ('SUCCESS', 'completed') or job.status == 'completed' or task.ready()):
+    # ==================== JSON 请求（JS轮询用） ====================
+    if request.args.get('json') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if (task.state in ('SUCCESS', 'completed') or
+            job.status == 'completed' or
+            task.ready()):
             try:
                 result = json.loads(job.result_json) if job.result_json else {}
             except:
@@ -203,25 +204,29 @@ def status(task_id):
         else:
             return jsonify({'status': task.state or 'unknown', 'progress': 30})
 
-    # 普通浏览器访问 → 返回HTML页面（关键！）
+    # ==================== 普通浏览器访问 → HTML页面 ====================
+    if (task.state in ('SUCCESS', 'completed') or
+        job.status == 'completed' or
+        task.ready()):
+        # 已完成
+        try:
+            result = json.loads(job.result_json) if job.result_json else {}
+        except Exception as e:
+            result = {}
+            flash(f'结果解析失败: {str(e)}')
+
+        return render_template('index.html',
+                               current_user=current_user,
+                               results=result.get('results', []),
+                               stats=result.get('stats', {}),
+                               matched_segments=result.get('matched_segments', []),
+                               status='completed')
     else:
-        if (task.state in ('SUCCESS', 'completed') or job.status == 'completed' or task.ready()):
-            try:
-                result = json.loads(job.result_json) if job.result_json else {}
-            except:
-                result = {}
-            return render_template('index.html',
-                                   current_user=current_user,
-                                   results=result.get('results', []),
-                                   stats=result.get('stats', {}),
-                                   matched_segments=result.get('matched_segments', []),
-                                   status='completed')
-        else:
-            # 进行中 → 显示进度条页面
-            return render_template('index.html',
-                                   current_user=current_user,
-                                   status='pending',
-                                   task_id=task_id)
+        # 进行中 → 显示进度条
+        return render_template('index.html',
+                               current_user=current_user,
+                               status='pending',
+                               task_id=task_id)
 
 if __name__ == '__main__':
     app.run(debug=True)
