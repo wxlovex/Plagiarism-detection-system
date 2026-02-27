@@ -168,6 +168,7 @@ def index():
 
     return render_template('index.html', current_user=current_user)
 
+
 @app.route('/status/<task_id>')
 @jwt_required()
 def status(task_id):
@@ -183,11 +184,16 @@ def status(task_id):
     # 从 Celery 获取最新状态
     task = detect_plagiarism.AsyncResult(task_id)
 
-    if task.state in ('SUCCESS', 'completed') or job.status == 'completed':
+    # 最终强化判断：只要任务成功或数据库已标记完成，就返回 completed
+    if (task.state in ('SUCCESS', 'completed') or
+            job.status == 'completed' or
+            task.ready()):
+
         try:
             result = json.loads(job.result_json) if job.result_json else {}
         except:
             result = {}
+
         return jsonify({
             'status': 'completed',
             'progress': 100,
