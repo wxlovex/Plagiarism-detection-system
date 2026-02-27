@@ -89,7 +89,7 @@
 
     function updateProgress() {
         attempts++;
-        fetch(`/status/${taskId}`)
+        fetch(`/status/${taskId}?json=1`)
             .then(res => res.json())
             .then(data => {
                 let progress = data.progress || 30;

@@ -17,6 +17,7 @@ def extract_text(file_storage):
             text += page.get_text()
         return text
     elif filename.endswith('.docx'):
+        file_storage.seek(0)
         doc = docx.Document(file_storage)
         return "\n".join([p.text for p in doc.paragraphs])
     else:

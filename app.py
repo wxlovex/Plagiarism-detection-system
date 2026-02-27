@@ -172,45 +172,56 @@ def index():
 @app.route('/status/<task_id>')
 @jwt_required()
 def status(task_id):
-    from models import DetectionJob
-    from tasks import detect_plagiarism
-
     job = DetectionJob.query.get(task_id)
     if not job:
-        return jsonify({'status': 'not_found', 'progress': 0})
+        if request.is_json or request.args.get('json') == '1':
+            return jsonify({'status': 'not_found', 'progress': 0})
+        return render_template('index.html', current_user=get_jwt_identity(), error="任务不存在")
 
     current_user = get_jwt_identity()
-
-    # 从 Celery 获取最新状态
     task = detect_plagiarism.AsyncResult(task_id)
 
-    # 最终强化判断：只要任务成功或数据库已标记完成，就返回 completed
-    if (task.state in ('SUCCESS', 'completed') or
-            job.status == 'completed' or
-            task.ready()):
+    # AJAX/JS轮询 或 ?json=1 时返回JSON（保持原有逻辑）
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.args.get('json') == '1':
+        if (task.state in ('SUCCESS', 'completed') or job.status == 'completed' or task.ready()):
+            try:
+                result = json.loads(job.result_json) if job.result_json else {}
+            except:
+                result = {}
+            return jsonify({
+                'status': 'completed',
+                'progress': 100,
+                'results': result.get('results', []),
+                'stats': result.get('stats', {}),
+                'matched_segments': result.get('matched_segments', [])
+            })
+        elif task.state == 'PROGRESS':
+            progress = task.info.get('progress', 30) if isinstance(task.info, dict) else 30
+            return jsonify({'status': 'PROGRESS', 'progress': progress})
+        elif task.state == 'PENDING':
+            return jsonify({'status': 'PENDING', 'progress': 15})
+        else:
+            return jsonify({'status': task.state or 'unknown', 'progress': 30})
 
-        try:
-            result = json.loads(job.result_json) if job.result_json else {}
-        except:
-            result = {}
-
-        return jsonify({
-            'status': 'completed',
-            'progress': 100,
-            'results': result.get('results', []),
-            'stats': result.get('stats', {}),
-            'matched_segments': result.get('matched_segments', [])
-        })
-
-    elif task.state == 'PROGRESS':
-        progress = task.info.get('progress', 30) if isinstance(task.info, dict) else 30
-        return jsonify({'status': 'PROGRESS', 'progress': progress})
-
-    elif task.state == 'PENDING':
-        return jsonify({'status': 'PENDING', 'progress': 15})
-
+    # 普通浏览器访问 → 返回HTML页面（关键！）
     else:
-        return jsonify({'status': task.state or 'unknown', 'progress': 30})
+        if (task.state in ('SUCCESS', 'completed') or job.status == 'completed' or task.ready()):
+            try:
+                result = json.loads(job.result_json) if job.result_json else {}
+            except:
+                result = {}
+            return render_template('index.html',
+                                   current_user=current_user,
+                                   results=result.get('results', []),
+                                   stats=result.get('stats', {}),
+                                   matched_segments=result.get('matched_segments', []),
+                                   status='completed')
+        else:
+            # 进行中 → 显示进度条页面
+            return render_template('index.html',
+                                   current_user=current_user,
+                                   status='pending',
+                                   task_id=task_id)
 
 if __name__ == '__main__':
     app.run(debug=True)
