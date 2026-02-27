@@ -84,10 +84,10 @@
 </div>
 
 <script>
-    // 最终加强版自动刷新（确保检测完成后自动显示报告和高亮对比）
+    // 最终加强版自动刷新（确保第二次及后续检测也能正常完成）
     let taskId = "{{ task_id }}";
     let attempts = 0;
-    const maxAttempts = 60;   // 最多等 60 次（约 48 秒）
+    const maxAttempts = 12;   // 最多等 10 秒
 
     function updateProgress() {
         attempts++;
@@ -100,12 +100,11 @@
                 document.getElementById('progress-text').textContent = progress + '%';
 
                 if (data.status === 'completed' || data.status === 'SUCCESS') {
-                    // 检测完成，自动刷新页面显示报告和高亮对比
-                    location.reload();
+                    location.reload();   // 完成自动刷新显示报告和高亮对比
                 } else if (attempts > maxAttempts) {
-                    alert('检测时间过长，请手动刷新页面查看结果');
+                    alert('检测时间过长，请手动刷新页面');
                 } else {
-                    setTimeout(updateProgress, 800);  // 每800ms更新一次
+                    setTimeout(updateProgress, 800);
                 }
             })
             .catch(() => {
@@ -115,7 +114,6 @@
             });
     }
 
-    // 立即启动
     setTimeout(updateProgress, 600);
 </script>
 {% endif %}
