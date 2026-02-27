@@ -80,14 +80,12 @@
         </div>
     </div>
     <small id="progress-status" class="text-muted">正在比对模板库...</small>
-    <p class="mt-2">任务ID: <strong>{{ task_id }}</strong></p>
 </div>
 
 <script>
-    // 最终加强版自动刷新（确保第二次及后续检测也能正常完成）
     let taskId = "{{ task_id }}";
     let attempts = 0;
-    const maxAttempts = 12;   // 最多等 10 秒
+    const maxAttempts = 90;   // 最多等 72 秒
 
     function updateProgress() {
         attempts++;
@@ -100,7 +98,7 @@
                 document.getElementById('progress-text').textContent = progress + '%';
 
                 if (data.status === 'completed' || data.status === 'SUCCESS') {
-                    location.reload();   // 完成自动刷新显示报告和高亮对比
+                    location.reload();   // 检测完成自动刷新显示报告和高亮对比
                 } else if (attempts > maxAttempts) {
                     alert('检测时间过长，请手动刷新页面');
                 } else {
@@ -117,6 +115,7 @@
     setTimeout(updateProgress, 600);
 </script>
 {% endif %}
+
 
 <div class="container">
     <h1 class="text-center mb-4" style="color: #007bff;">毕业论文致谢抄袭检测系统</h1>

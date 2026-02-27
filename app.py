@@ -176,40 +176,35 @@ def status(task_id):
 
     job = DetectionJob.query.get(task_id)
     if not job:
-        flash('任务不存在！')
-        return redirect(url_for('index'))
+        return jsonify({'status': 'not_found', 'progress': 0})
 
     current_user = get_jwt_identity()
 
+    # 从 Celery 获取最新状态
     task = detect_plagiarism.AsyncResult(task_id)
 
     if task.state in ('SUCCESS', 'completed') or job.status == 'completed':
-        result = json.loads(job.result_json) if job.result_json else {}
-        return render_template('index.html',
-                               results=result.get('results', []),
-                               stats=result.get('stats', {}),
-                               matched_segments=result.get('matched_segments', []),
-                               current_user=current_user,
-                               task_id=task_id,
-                               status='completed')
+        try:
+            result = json.loads(job.result_json) if job.result_json else {}
+        except:
+            result = {}
+        return jsonify({
+            'status': 'completed',
+            'progress': 100,
+            'results': result.get('results', []),
+            'stats': result.get('stats', {}),
+            'matched_segments': result.get('matched_segments', [])
+        })
 
     elif task.state == 'PROGRESS':
         progress = task.info.get('progress', 30) if isinstance(task.info, dict) else 30
-        return render_template('index.html',
-                               current_user=current_user,
-                               task_id=task_id,
-                               status='pending',
-                               progress=progress)
+        return jsonify({'status': 'PROGRESS', 'progress': progress})
 
     elif task.state == 'PENDING':
-        return render_template('index.html',
-                               current_user=current_user,
-                               task_id=task_id,
-                               status='pending')
+        return jsonify({'status': 'PENDING', 'progress': 15})
 
     else:
-        flash(f'任务异常：{task.state}')
-        return redirect(url_for('index'))
+        return jsonify({'status': task.state or 'unknown', 'progress': 30})
 
 if __name__ == '__main__':
     app.run(debug=True)
