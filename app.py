@@ -6,6 +6,9 @@ import json
 from datetime import datetime, timedelta
 import re
 import jieba
+print("🚀 预加载 jieba 模型...")
+jieba.lcut("预加载模型测试")  # 强制加载缓存，避免任务中首次加载
+print("✅ jieba 模型预加载完成")
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, render_template, request, flash, redirect, url_for, jsonify, make_response
