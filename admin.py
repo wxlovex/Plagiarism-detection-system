@@ -1,3 +1,4 @@
+# admin.py
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField
@@ -6,34 +7,36 @@ from models import Template, db
 from functools import wraps
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin', template_folder='templates/admin')
 
-# ====================== 权限装饰器 ======================
+# ====================== 管理员权限装饰器 ======================
 def admin_required(f):
     @wraps(f)
     @jwt_required()
-    def decorated(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
         current_user = get_jwt_identity()
         from models import User
         user = User.query.filter_by(username=current_user).first()
         if not user or user.role != 'admin':
-            flash('❌ 无管理员权限！')
+            flash('❌ 您没有管理员权限！')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
-    return decorated
+    return decorated_function
 
 # ====================== 表单 ======================
 class TemplateForm(FlaskForm):
-    title = StringField('标题', validators=[DataRequired()])
-    content = TextAreaField('内容', validators=[DataRequired()])
-    category = SelectField('分类', choices=[('general', '通用致谢'), ('computer', '计算机专业')], validators=[DataRequired()])
+    title = StringField('模板标题', validators=[DataRequired()])
+    content = TextAreaField('模板内容', validators=[DataRequired()])
+    category = SelectField('分类',
+                           choices=[('general', '通用致谢'), ('computer', '计算机专业')],
+                           validators=[DataRequired()])
 
 # ====================== 路由 ======================
 @admin_bp.route('/templates')
 @admin_required
 def templates_list():
     page = request.args.get('page', 1, type=int)
-    search = request.args.get('search', '')
+    search = request.args.get('search', '').strip()
     category = request.args.get('category', '')
 
     query = Template.query
@@ -54,8 +57,8 @@ def template_add():
     form = TemplateForm()
     if form.validate_on_submit():
         tpl = Template(
-            title=form.title.data,
-            content=form.content.data,
+            title=form.title.data.strip(),
+            content=form.content.data.strip(),
             category=form.category.data
         )
         db.session.add(tpl)
@@ -70,8 +73,8 @@ def template_edit(id):
     tpl = Template.query.get_or_404(id)
     form = TemplateForm(obj=tpl)
     if form.validate_on_submit():
-        tpl.title = form.title.data
-        tpl.content = form.content.data
+        tpl.title = form.title.data.strip()
+        tpl.content = form.content.data.strip()
         tpl.category = form.category.data
         db.session.commit()
         flash('✅ 模板更新成功！')
@@ -87,28 +90,26 @@ def template_delete(id):
     flash('✅ 模板已删除！')
     return redirect(url_for('admin.templates_list'))
 
-# 批量导入（保留你原来的功能并优化）
-@admin_bp.route('/templates/batch_import', methods=['POST'])
+# ====================== 批量导入 ======================
+@admin_bp.route('/templates/batch_import', methods=['GET', 'POST'])
 @admin_required
 def batch_import():
-    files = request.files.getlist('files')
-    category = request.form.get('category')
-    sub_category = request.form.get('sub_category', '本科')
-    school = request.form.get('school', '通用')
+    if request.method == 'POST':
+        files = request.files.getlist('files')
+        category = request.form.get('category')
+        count = 0
+        for file in files:
+            if file and file.filename.endswith('.txt'):
+                content = file.read().decode('utf-8', errors='ignore')
+                title = file.filename.rsplit('.', 1)[0]
+                tpl = Template(title=title, content=content, category=category)
+                db.session.add(tpl)
+                count += 1
+        if count > 0:
+            db.session.commit()
+            flash(f'✅ 成功批量导入 {count} 条模板！')
+        else:
+            flash('❌ 未找到有效 TXT 文件')
+        return redirect(url_for('admin.templates_list'))
 
-    count = 0
-    for file in files:
-        if file and file.filename.endswith('.txt'):
-            content = file.read().decode('utf-8')
-            title = file.filename.replace('.txt', '')
-            tpl = Template(
-                title=title,
-                content=content,
-                category=category,
-                # 如果你 models 加了 sub_category 和 school 字段就放这里
-            )
-            db.session.add(tpl)
-            count += 1
-    db.session.commit()
-    flash(f'✅ 成功批量导入 {count} 条模板！')
-    return redirect(url_for('admin.templates_list'))
+    return render_template('admin/batch_import.html')
