@@ -200,7 +200,9 @@ def status(task_id):
         else:
             return jsonify({'status': task.state or 'unknown', 'progress': 30})
 
-    # === 普通浏览器访问 → HTML ===
+    # === 普通浏览器访问 → HTML页面（关键修复在这里）===
+    form = DetectionForm()   # ← 新增这一行！每次都创建 form
+
     if has_result or task.state in ('SUCCESS', 'completed') or task.ready():
         try:
             result = json.loads(job.result_json) if job.result_json else {}
@@ -213,13 +215,16 @@ def status(task_id):
                                results=result.get('results', []),
                                stats=result.get('stats', {}),
                                matched_segments=result.get('matched_segments', []),
-                               status='completed')
+                               status='completed',
+                               form=form)          # ← 加上 form=form
+
     else:
         # 显示进度条页面
         return render_template('index.html',
                                current_user=current_user,
                                status='pending',
-                               task_id=task_id)
+                               task_id=task_id,
+                               form=form)          # ← 也加上 form=form
 
 @app.after_request
 def add_security_headers(response):
