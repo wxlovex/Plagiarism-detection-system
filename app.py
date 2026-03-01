@@ -29,7 +29,9 @@ from admin import admin_bp
 # ====================== 启动时自动创建管理员 ======================
 def init_admin():
     with app.app_context():
-        db.create_all()  # 确保表存在
+        # 临时重建表结构（开发阶段使用，执行一次后删除下面两行！）
+        db.drop_all()  # ← 临时加这行（会删除所有模板数据）
+        db.create_all()  # ← 临时加这行（按新模型重建表）
         admin = User.query.filter_by(username=ADMIN_USERNAME).first()
         if not admin:
             hashed_pw = generate_password_hash(ADMIN_DEFAULT_PASSWORD)
