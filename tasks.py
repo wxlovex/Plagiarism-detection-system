@@ -27,7 +27,7 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
     time.sleep(1.2)
 
     try:
-        from app_backup_1 import app, db
+        from app import app, db
         from models import DetectionJob, Template
 
         #文件读取
