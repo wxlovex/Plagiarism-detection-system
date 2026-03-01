@@ -82,6 +82,7 @@
             {% endif %}
         {% endwith %}
         <form method="POST">
+            {{ form.hidden_tag() }}
             <div class="mb-3">
                 <label class="form-label">用户名</label>
                 <input type="text" class="form-control" name="username" required>

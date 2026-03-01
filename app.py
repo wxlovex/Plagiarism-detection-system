@@ -119,7 +119,7 @@ def logout():
 @jwt_required()
 def index():
     current_user = get_jwt_identity()
-    form = DetectionForm()
+    form = DetectionForm()   # 每次都实例化
 
     if request.method == 'POST' and form.validate_on_submit():
         test_file = form.test_file.data
@@ -160,7 +160,7 @@ def index():
         flash(f'✅ 检测任务已提交！任务ID: {task.id}')
         return redirect(url_for('status', task_id=task.id))
 
-    # GET 或验证失败
+    # GET 或验证失败 → 重新渲染表单（关键！）
     return render_template('index.html', current_user=current_user, form=form)
 
 # status 路由保持你原来的最终版（已正确）

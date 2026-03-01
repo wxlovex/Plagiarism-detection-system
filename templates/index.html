@@ -130,7 +130,7 @@
     {% endif %}
     {% endwith %}
     <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}   <!-- 只保留这一行即可 -->
+        {{ form.hidden_tag() }}   <!-- 只保留这一行，删除下面所有手动 hidden csrf -->
 
         <div class="mb-3">
             <label class="form-label fw-bold">上传测试文件：</label>
