@@ -261,13 +261,27 @@ def status(task_id):
 def migrate_db():
     with app.app_context():
         try:
-            # 添加缺失的列（不会删除已有数据）
-            db.engine.execute("ALTER TABLE templates ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50) DEFAULT '本科'")
-            db.engine.execute("ALTER TABLE templates ADD COLUMN IF NOT EXISTS school VARCHAR(100) DEFAULT '通用'")
-            print("✅ 数据库表结构已成功更新！")
-            return "✅ 迁移成功！现在可以正常检测和使用后台了。<br><br>请删除这个 /migrate 路由后再重启容器。"
+            db.engine.execute("""
+                ALTER TABLE templates 
+                ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50) DEFAULT '本科'
+            """)
+            db.engine.execute("""
+                ALTER TABLE templates 
+                ADD COLUMN IF NOT EXISTS school VARCHAR(100) DEFAULT '通用'
+            """)
+            print("✅ 数据库迁移成功！新增了 sub_category 和 school 字段")
+            return """
+                <h1 style="color:green">✅ 迁移成功！</h1>
+                <p>现在可以正常使用检测和后台管理系统了。</p>
+                <p><strong>请立即删除这个 /migrate 路由！</strong></p>
+            """
         except Exception as e:
-            return f"❌ 迁移失败: {str(e)}"
+            print(f"❌ 迁移失败: {str(e)}")
+            return f"""
+                <h1 style="color:red">❌ 迁移失败</h1>
+                <p>{str(e)}</p>
+                <p>请检查数据库权限或手动执行 SQL。</p>
+            """
 
 @app.after_request
 def add_security_headers(response):
