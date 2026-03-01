@@ -17,15 +17,39 @@ from flask import Flask, render_template, request, flash, redirect, url_for, jso
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, unset_jwt_cookies, set_access_cookies, get_jwt
 from werkzeug.security import generate_password_hash, check_password_hash
-from config import DB_CONFIG, JWT_SECRET_KEY, redis_client
+from config import DB_CONFIG, JWT_SECRET_KEY, redis_client, ADMIN_USERNAME, ADMIN_DEFAULT_PASSWORD
 from models import db, User, Template, DetectionJob
 from extractors import extract_text, extract_acknowledgements
 from flask_wtf.csrf import CSRFProtect
 from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, FloatField
 from wtforms.validators import DataRequired
+from admin import admin_bp
+
+# ====================== 启动时自动创建管理员 ======================
+def init_admin():
+    with app.app_context():
+        db.create_all()  # 确保表存在
+        admin = User.query.filter_by(username=ADMIN_USERNAME).first()
+        if not admin:
+            hashed_pw = generate_password_hash(ADMIN_DEFAULT_PASSWORD)
+            admin = User(
+                username=ADMIN_USERNAME,
+                hashed_password=hashed_pw,
+                role='admin'
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print(f"✅ 默认管理员账号已自动创建！")
+            print(f"   用户名: {ADMIN_USERNAME}")
+            print(f"   密码: {ADMIN_DEFAULT_PASSWORD}  （请立即修改！）")
+        else:
+            print(f"✅ 管理员账号已存在（{ADMIN_USERNAME}）")
 
 app = Flask(__name__)
+# 注册管理员蓝图
+app.register_blueprint(admin_bp)
+
 app.secret_key = 'your_secret_key'
 app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
@@ -91,17 +115,23 @@ def register():
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password']
+
         if not is_strong_password(password):
             flash('密码必须≥8位，包含大小写字母和数字！')
             return render_template('register.html')
+
         if User.query.filter_by(username=username).first():
             flash('用户名已存在！')
             return render_template('register.html')
+
+        # 特殊处理：用户名是 admin 时强制设为管理员
+        role = 'admin' if username.lower() == ADMIN_USERNAME else 'student'
+
         hashed_pw = generate_password_hash(password)
         user = User(username=username, hashed_password=hashed_pw)
         db.session.add(user)
         db.session.commit()
-        flash('注册成功，请登录！')
+        flash(f'注册成功！{"（管理员账号）" if role == "admin" else ""} 请登录！')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -236,4 +266,7 @@ def add_security_headers(response):
     return response
 
 if __name__ == '__main__':
+    # ====================== 启动初始化 ======================
+    init_admin()
     app.run(debug=True)
+

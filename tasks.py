@@ -7,12 +7,20 @@ from extractors import extract_acknowledgements, extract_text
 import json
 from utils import compute_similarity, judge_plagiarism
 from bleach import clean
+from bleach.css_sanitizer import CSSSanitizer
 
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
 
 def safe_text(text):
-    return clean(text, tags=['mark'], attributes={'mark': ['style']}, strip=True)
+    css_sanitizer = CSSSanitizer(allowed_css_properties=['background', 'color'])
+    return clean(
+        text,
+        tags=['mark'],
+        attributes={'mark': ['style']},
+        css_sanitizer=css_sanitizer,
+        strip=True
+    )
 
 @celery.task(bind=True)
 def detect_plagiarism(self, test_filename, category, threshold, user_id):

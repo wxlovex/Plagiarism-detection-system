@@ -42,7 +42,7 @@ REDIS_CONFIG = {
     'decode_responses': True
 }
 
-JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'change-in-production-2026')
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-super-secret-32-bytes-key-2026-change-it!')
 JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)   # 缩短
 JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
 JWT_BLACKLIST_ENABLED = True
@@ -61,6 +61,9 @@ redis_client = redis.Redis(
     socket_connect_timeout=5,
     socket_timeout=5
 )
+
+ADMIN_USERNAME = 'admin'
+ADMIN_DEFAULT_PASSWORD = os.getenv('ADMIN_DEFAULT_PASSWORD', 'Admin123!')  # 生产环境建议改
 
 # 测试连接（启动时打印，生产可删）
 try:

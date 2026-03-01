@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>模板管理后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <h1 class="mb-4">📚 模板管理后台</h1>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mb-3">← 返回首页</a>
+
+    <div class="card mb-4">
+        <div class="card-header">批量导入模板</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.upload_templates') }}" enctype="multipart/form-data">
+                <input type="file" name="files" multiple accept=".txt" class="form-control mb-3" required>
+                <div class="row">
+                    <div class="col-md-4">
+                        <select name="category" class="form-select">
+                            <option value="general">通用致谢</option>
+                            <option value="computer">计算机专业</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="sub_category" class="form-select">
+                            <option value="本科">本科</option>
+                            <option value="硕士">硕士</option>
+                            <option value="博士">博士</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="school" class="form-control" placeholder="学校/专业标签" value="通用">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success mt-3">🚀 批量导入 TXT 文件</button>
+            </form>
+        </div>
+    </div>
+
+    <h3>现有模板（共 {{ templates|length }} 条）</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>标题</th>
+                <th>分类</th>
+                <th>子分类</th>
+                <th>学校标签</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in templates %}
+            <tr>
+                <td>{{ t.title }}</td>
+                <td>{{ t.category }}</td>
+                <td>{{ t.sub_category }}</td>
+                <td>{{ t.school }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-danger" onclick="if(confirm('确定删除？')) location.href='#'">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
