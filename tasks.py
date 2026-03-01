@@ -1,24 +1,22 @@
 # tasks.py （最终修复版 - 彻底解决循环导入）
 import os
 
+from bleach.css_sanitizer import CSSSanitizer
 from celery import Celery
 from config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 from extractors import extract_acknowledgements, extract_text
 import json
 from utils import compute_similarity, judge_plagiarism
 from bleach import clean
-from bleach.css_sanitizer import CSSSanitizer
 
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
 
 def safe_text(text):
-    css_sanitizer = CSSSanitizer(allowed_css_properties=['background', 'color'])
     return clean(
         text,
         tags=['mark'],
         attributes={'mark': ['style']},
-        css_sanitizer=css_sanitizer,
         strip=True
     )
 
