@@ -1,12 +1,18 @@
 # tasks.py （最终修复版 - 彻底解决循环导入）
+import os
+
 from celery import Celery
 from config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
-from extractors import extract_acknowledgements
+from extractors import extract_acknowledgements, extract_text
 import json
 from utils import compute_similarity, judge_plagiarism
+from bleach import clean
 
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 
+
+def safe_text(text):
+    return clean(text, tags=['mark'], attributes={'mark': ['style']}, strip=True)
 
 @celery.task(bind=True)
 def detect_plagiarism(self, test_filename, category, threshold, user_id):
@@ -15,12 +21,16 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
     time.sleep(1.2)
 
     try:
-        from app import app, db
+        from app_backup_1 import app, db
         from models import DetectionJob, Template
 
+        #文件读取
         with app.app_context():
-            with open(f'uploads/{test_filename}', 'r', encoding='utf-8') as f:
-                text1 = f.read()
+            filepath = os.path.join('uploads', test_filename)
+            with open(filepath, 'rb') as f:
+                from werkzeug.datastructures import FileStorage
+                file_storage = FileStorage(f, filename=test_filename)
+                text1 = extract_text(file_storage)
 
             text1 = extract_acknowledgements(text1)
             self.update_state(state='PROGRESS', meta={'progress': 30})
@@ -39,7 +49,7 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 judgment = judge_plagiarism(score, threshold)
 
                 # 安全高亮（支持特殊文本）
-                user_text = text1[:300] if len(text1) > 300 else text1
+                user_text = safe_text(text1[:300]) if len(text1) > 300 else text1
                 template_text = content[:300] if len(content) > 300 else content
                 user_text = user_text.replace('<', '&lt;').replace('>', '&gt;')
                 template_text = template_text.replace('<', '&lt;').replace('>', '&gt;')
@@ -88,7 +98,7 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
     except Exception as e:
         print(f"【检测任务异常】: {str(e)}")
         try:
-            from app import app, db
+            from app_backup_1 import app, db
             from models import DetectionJob
             with app.app_context():
                 job = DetectionJob.query.get(self.request.id)
