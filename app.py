@@ -255,6 +255,20 @@ def status(task_id):
                                task_id=task_id,
                                form=form)          # ← 也加上 form=form
 
+
+# ====================== 临时数据库迁移路由（执行一次即可） ======================
+@app.route('/migrate')
+def migrate_db():
+    with app.app_context():
+        try:
+            # 添加缺失的列（不会删除已有数据）
+            db.engine.execute("ALTER TABLE templates ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50) DEFAULT '本科'")
+            db.engine.execute("ALTER TABLE templates ADD COLUMN IF NOT EXISTS school VARCHAR(100) DEFAULT '通用'")
+            print("✅ 数据库表结构已成功更新！")
+            return "✅ 迁移成功！现在可以正常检测和使用后台了。<br><br>请删除这个 /migrate 路由后再重启容器。"
+        except Exception as e:
+            return f"❌ 迁移失败: {str(e)}"
+
 @app.after_request
 def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
