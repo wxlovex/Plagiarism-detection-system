@@ -99,12 +99,20 @@ def login():
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password']
+
+        login_role = request.form.get('login_role', 'student')  # 默认普通用户
+
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.hashed_password, password):
+            #判断是否为管理员登录
+            if login_role == 'admin' and user.role != 'admin':
+                flash('❌ 该账号没有管理员权限！')
+                return render_template('login.html')
+
             access_token = create_access_token(identity=username)
             resp = make_response(redirect(url_for('index')))
             set_access_cookies(resp, access_token)
-            flash('登录成功！')
+            flash(f'✅ 登录成功！（{"管理员" if login_role == "admin" else "普通用户"}身份）')
             return resp
         flash('用户名或密码错误！')
     return render_template('login.html')
