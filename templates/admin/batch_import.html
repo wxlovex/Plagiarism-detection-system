@@ -15,7 +15,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
-                        {{ form.hidden_tag() if form else '' }}
+                        {{ form.hidden_tag() }}   <!-- ← 关键！必须加上这一行 -->
 
                         <div class="mb-3">
                             <label class="form-label">选择多个 TXT 文件</label>
@@ -37,13 +37,13 @@
                             </div>
                         </div>
 
-                        <div class="d-grid">
+                        <div class="d-grid mt-4">
                             <button type="submit" class="btn btn-success btn-lg">开始批量导入</button>
                         </div>
                     </form>
                 </div>
                 <div class="card-footer text-center">
-                    <a href="{{ url_for('admin.templates_list') }}" class="btn btn-link">返回模板列表</a>
+                    <a href="{{ url_for('admin.templates_list') }}" class="btn btn-link">← 返回模板列表</a>
                 </div>
             </div>
         </div>

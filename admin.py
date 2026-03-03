@@ -96,20 +96,29 @@ def template_delete(id):
 def batch_import():
     if request.method == 'POST':
         files = request.files.getlist('files')
-        category = request.form.get('category')
+        category = request.form.get('category', 'general')
+        school = request.form.get('school', '通用')
+
         count = 0
         for file in files:
             if file and file.filename.endswith('.txt'):
                 content = file.read().decode('utf-8', errors='ignore')
                 title = file.filename.rsplit('.', 1)[0]
-                tpl = Template(title=title, content=content, category=category)
+                tpl = Template(
+                    title=title,
+                    content=content,
+                    category=category
+                )
                 db.session.add(tpl)
                 count += 1
+
         if count > 0:
             db.session.commit()
             flash(f'✅ 成功批量导入 {count} 条模板！')
         else:
             flash('❌ 未找到有效 TXT 文件')
+
         return redirect(url_for('admin.templates_list'))
 
+    # GET 请求返回页面
     return render_template('admin/batch_import.html')
