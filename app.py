@@ -31,6 +31,7 @@ def init_admin():
     with app.app_context():
         admin = User.query.filter_by(username=ADMIN_USERNAME).first()
         if not admin:
+            # 首次创建
             hashed_pw = generate_password_hash(ADMIN_DEFAULT_PASSWORD)
             admin = User(
                 username=ADMIN_USERNAME,
@@ -39,11 +40,15 @@ def init_admin():
             )
             db.session.add(admin)
             db.session.commit()
-            print(f"✅ 默认管理员账号已自动创建！")
-            print(f"   用户名: {ADMIN_USERNAME}")
-            print(f"   密码: {ADMIN_DEFAULT_PASSWORD}  （请立即修改！）")
+            print(f"✅ 默认管理员账号已自动创建！ 用户名: {ADMIN_USERNAME}  密码: {ADMIN_DEFAULT_PASSWORD}")
         else:
-            print(f"✅ 管理员账号已存在（{ADMIN_USERNAME}）")
+            # 强制修复已有 admin 账号的角色
+            if admin.role != 'admin':
+                admin.role = 'admin'
+                db.session.commit()
+                print(f"✅ 已自动修复 admin 用户角色 → 'admin'")
+            else:
+                print(f"✅ 管理员账号已存在且角色正确（{ADMIN_USERNAME}）")
 
 app = Flask(__name__)
 # 注册管理员蓝图
