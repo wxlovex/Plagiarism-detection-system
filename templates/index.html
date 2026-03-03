@@ -174,32 +174,64 @@
 
     <hr class="my-4">
     <h2 class="text-center mb-3">检测报告</h2>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
-            <tr>
-                <th>参考文件</th>
-                <th>相似度</th>
-                <th>判断</th>
-                <th>AI生成概率</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for row in results %}
-            <tr class="{% if row[1] > 0.7 %}high-sim{% elif row[1] > 0.3 %}medium-sim{% else %}low-sim{% endif %}">
-                <td>{{ row[0] }}</td>
-                <td>{{ "%.4f"|format(row[1]) }}</td>
-                <td>{{ row[2] }}</td>
-                <td>
-                    <span class="badge {% if aigc_score(row[0]) > 70 %}bg-danger{% elif aigc_score(row[0]) > 45 %}bg-warning{% else %}bg-success{% endif %}">
-                        AI生成概率: {{ aigc_score(row[0]) }}%
-                    </span>
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <!-- 导出PDF报告 -->
+    <div class="text-end mb-3">
+        <a href="{{ url_for('export_pdf', task_id=job_id if 'job_id' in vars() else task_id) }}"
+           class="btn btn-danger me-2" target="_blank">
+            📄 导出 PDF 报告
+        </a>
     </div>
+
+<!-- Top N 高相似并排对比 -->
+    {% if matched_segments %}
+    <h5 class="text-danger mb-3">🔥 前 {{ matched_segments|length }} 个最相似模板</h5>
+    {% for seg in matched_segments %}
+    <div class="row mb-4 border rounded p-3 bg-light">
+        <div class="col-md-6">
+            <h6 class="text-danger">你的原文（高亮部分）</h6>
+            <pre class="bg-white p-3 border" style="white-space: pre-wrap; font-size:0.95rem;">{{ seg.user_text | safe }}</pre>
+        </div>
+        <div class="col-md-6">
+            <h6 class="text-danger">相似模板：{{ seg.title }}</h6>
+            <pre class="bg-white p-3 border" style="white-space: pre-wrap; font-size:0.95rem;">{{ seg.template_text | safe }}</pre>
+            <p class="text-end mt-2">
+                <span class="badge bg-danger fs-6">{{ "%.1f"|format(seg.score * 100) }}% 相似</span>
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- 其余结果（折叠） -->
+    {% if remaining_matched %}
+    <div class="mt-4">
+        <button class="btn btn-outline-secondary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#moreResults">
+            ⬇️ 查看其余 {{ remaining_matched|length }} 个结果（点击展开）
+        </button>
+        <div class="collapse mt-3" id="moreResults">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <th>参考模板</th>
+                        <th>相似度</th>
+                        <th>判断</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in full_results[top_n:] if full_results is defined else [] %}
+                    <tr class="{% if row[1] > 0.7 %}high-sim{% elif row[1] > 0.3 %}medium-sim{% else %}low-sim{% endif %}">
+                        <td>{{ row[0] }}</td>
+                        <td>{{ "%.4f"|format(row[1]) }}</td>
+                        <td>{{ row[2] }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- 新增：统计卡片 -->
     <hr class="my-4">

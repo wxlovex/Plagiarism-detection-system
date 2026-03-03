@@ -1,4 +1,4 @@
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, send_file
 from detector import read_file
 from utils import compute_similarity, judge_plagiarism, get_templates_from_db, aigc_score
 from tasks import detect_plagiarism
@@ -25,6 +25,14 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, FloatField
 from wtforms.validators import DataRequired
 from admin import admin_bp
+# ====================== 报告导出 ======================
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from io import BytesIO
+
 
 # ====================== 启动时自动创建管理员 ======================
 def init_admin():
@@ -99,6 +107,7 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     return redis_client.get(f"jwt_blacklist:{jti}") is not None
 
 # ====================== 路由 ======================
+#登录
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -126,6 +135,7 @@ def login():
 
     return render_template('login.html')
 
+#注册
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -151,6 +161,7 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+#登出
 @app.route('/logout')
 @jwt_required()
 def logout():
@@ -231,6 +242,7 @@ def status(task_id):
                 result = json.loads(job.result_json) if job.result_json else {}
             except:
                 result = {}
+                flash('结果解析失败，请重试')
             return jsonify({
                 'status': 'completed',
                 'progress': 100,
@@ -256,13 +268,30 @@ def status(task_id):
             result = {}
             flash('结果解析失败，请重试')
 
+        # ====================== 优化显示逻辑 ======================
+        all_results = result.get('results', [])
+        matched_segments = result.get('matched_segments', [])
+
+        # Top N 高相似（默认显示前8条最相似的）
+        top_n = request.args.get('top', 8, type=int)
+        top_results = sorted(all_results, key=lambda x: x[1], reverse=True)[:top_n]
+        top_matched = [m for m in matched_segments if m['title'] in [r[0] for r in top_results]]
+
+        # 其余结果（用于“加载更多”）
+        remaining_results = all_results[top_n:]
+        remaining_matched = [m for m in matched_segments if m['title'] not in [r[0] for r in top_results]]
+
         return render_template('index.html',
                                current_user=current_user,
-                               results=result.get('results', []),
+                               results=top_results,  # 前端只显示 Top N
+                               full_results=all_results,  # 导出时用全部
                                stats=result.get('stats', {}),
-                               matched_segments=result.get('matched_segments', []),
+                               matched_segments=top_matched,  # 前端只显示 Top N
+                               remaining_matched=remaining_matched,
+                               total=len(all_results),
+                               threshold=result.get('threshold', 0.7),
                                status='completed',
-                               form=form)          # ← 加上 form=form
+                               form=form )          # ← 加上 form=form
 
     else:
         # 显示进度条页面
@@ -271,6 +300,71 @@ def status(task_id):
                                status='pending',
                                task_id=task_id,
                                form=form)          # ← 也加上 form=form
+
+
+
+
+@app.route('/export/pdf/<task_id>')
+@jwt_required()
+def export_pdf(task_id):
+    job = DetectionJob.query.get_or_404(task_id)
+    current_user = get_jwt_identity()
+    if job.user_id != User.query.filter_by(username=current_user).first().id:
+        flash('❌ 只能导出自己的检测报告！')
+        return redirect(url_for('index'))
+
+    try:
+        result = json.loads(job.result_json)
+    except:
+        flash('报告数据异常')
+        return redirect(url_for('status', task_id=task_id))
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+    styles = getSampleStyleSheet()
+    story = []
+
+    # 标题
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=18, spaceAfter=30)
+    story.append(Paragraph(f"毕业论文致谢抄袭检测报告", title_style))
+    story.append(Paragraph(f"任务ID: {task_id}", styles['Normal']))
+    story.append(Spacer(1, 20))
+
+    # 统计
+    stats = result.get('stats', {})
+    data = [
+        ['检测项目', '数量'],
+        ['总参考模板', str(result.get('total', 0))],
+        ['原创（低相似）', str(stats.get('原创', 0))],
+        ['中等相似', str(stats.get('中等相似', 0))],
+        ['疑似抄袭（高相似）', str(stats.get('疑似抄袭', 0))],
+        ['阈值设置', f"{result.get('threshold', 0.7):.2f}"]
+    ]
+    t = Table(data, colWidths=[3*inch, 2*inch])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#007BFF')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 30))
+
+    # 相似段落
+    story.append(Paragraph("🔍 相似段落对比（Top 3）", styles['Heading2']))
+    for seg in result.get('matched_segments', [])[:3]:
+        story.append(Paragraph(f"<b>模板：</b>{seg['title']}（{seg['score']*100:.1f}% 相似）", styles['Normal']))
+        story.append(Paragraph(f"<b>你的原文：</b>{seg['user_text'][:300]}...", styles['Normal']))
+        story.append(Spacer(1, 12))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    return send_file(buffer, as_attachment=True, download_name=f"检测报告_{task_id[:8]}.pdf", mimetype='application/pdf')
 
 
 # ====================== 临时数据库迁移路由（执行一次即可） ======================

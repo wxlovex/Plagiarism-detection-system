@@ -38,4 +38,5 @@ gevent==24.11.1
 Flask-WTF==1.2.1
 bleach==6.2.0
 tinycss2==1.4.0
+reportlab==4.2.2
 
