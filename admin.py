@@ -94,6 +94,11 @@ def template_delete(id):
 @admin_bp.route('/templates/batch_import', methods=['GET', 'POST'])
 @admin_required
 def batch_import():
+    class BatchImportForm(FlaskForm):
+        pass  # 空表单，只需要 CSRF token
+
+    form = BatchImportForm()
+
     if request.method == 'POST':
         files = request.files.getlist('files')
         category = request.form.get('category', 'general')
@@ -121,4 +126,4 @@ def batch_import():
         return redirect(url_for('admin.templates_list'))
 
     # GET 请求返回页面
-    return render_template('admin/batch_import.html')
+    return render_template('admin/batch_import.html' , form=form)
