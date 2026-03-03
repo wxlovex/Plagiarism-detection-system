@@ -46,8 +46,8 @@
         <div class="col-md-3">
             <select name="category" class="form-select">
                 <option value="">全部分类</option>
-                <option value="general" {% if category = 'general' %}selected{% endif %}>通用致谢</option>
-                <option value="computer" {% if category = 'computer' %}selected{% endif %}>计算机专业</option>
+                <option value="general" {% if category == 'general' %}selected{% endif %}>通用致谢</option>
+                <option value="computer" {% if category == 'computer' %}selected{% endif %}>计算机专业</option>
             </select>
         </div>
         <div class="col-md-2">
