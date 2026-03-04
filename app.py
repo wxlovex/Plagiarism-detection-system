@@ -284,7 +284,7 @@ def status(task_id):
         return render_template('index.html',
                                current_user=current_user,
                                results=top_results,  # 前端只显示 Top N
-                               full_results=all_results,  # 导出时用全部
+                               remaining_results=remaining_results,  # 导出
                                stats=result.get('stats', {}),
                                matched_segments=top_matched,  # 前端只显示 Top N
                                remaining_matched=remaining_matched,

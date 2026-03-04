@@ -219,7 +219,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for row in full_results[top_n:] if full_results is defined else [] %}
+                    {% for row in remaining_results %}
                     <tr class="{% if row[1] > 0.7 %}high-sim{% elif row[1] > 0.3 %}medium-sim{% else %}low-sim{% endif %}">
                         <td>{{ row[0] }}</td>
                         <td>{{ "%.4f"|format(row[1]) }}</td>
