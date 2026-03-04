@@ -408,12 +408,16 @@ def add_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
 
-    # 现在可以严格限制，只允许 self + data URI
+    # 严格但可用的 CSP（本地 + data: + 必要 fallback）
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "          # 允许内联 JS（Bootstrap 需要）
-        "style-src 'self' 'unsafe-inline'; "           # 允许内联 style
-        "img-src 'self' data:;"                        # 允许 data: URI 的 SVG 图标
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "          # 允许本地 JS + 内联脚本
+        "style-src 'self' 'unsafe-inline'; "                          # 允许内联样式 + 本地 CSS
+        "img-src 'self' data: blob:; "                                # 允许 data: SVG 图标
+        "font-src 'self' data:; "                                     # 如果有字体
+        "connect-src 'self'; "                                        # 防止 source map 等连接被挡
+        "object-src 'none'; "                                         # 禁用插件
+        "frame-ancestors 'self';"                                     # 防点击劫持
     )
     return response
 
