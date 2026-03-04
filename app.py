@@ -302,11 +302,38 @@ def status(task_id):
                                form=form)          # ← 也加上 form=form
 
 
+# ====================== 临时数据库迁移路由（执行一次即可） ======================
+@app.route('/migrate')
+def migrate_db():
+    with app.app_context():
+        try:
+            db.engine.execute("""
+                ALTER TABLE templates 
+                ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50) DEFAULT '本科'
+            """)
+            db.engine.execute("""
+                ALTER TABLE templates 
+                ADD COLUMN IF NOT EXISTS school VARCHAR(100) DEFAULT '通用'
+            """)
+            print("✅ 数据库迁移成功！新增了 sub_category 和 school 字段")
+            return """
+                <h1 style="color:green">✅ 迁移成功！</h1>
+                <p>现在可以正常使用检测和后台管理系统了。</p>
+                <p><strong>请立即删除这个 /migrate 路由！</strong></p>
+            """
+        except Exception as e:
+            print(f"❌ 迁移失败: {str(e)}")
+            return f"""
+                <h1 style="color:red">❌ 迁移失败</h1>
+                <p>{str(e)}</p>
+                <p>请检查数据库权限或手动执行 SQL。</p>
+            """
 
-
+#导出
 @app.route('/export/pdf/<task_id>')
 @jwt_required()
 def export_pdf(task_id):
+    print(f"访问 PDF 导出路由，task_id = {task_id}")
     job = DetectionJob.query.get_or_404(task_id)
     current_user = get_jwt_identity()
     if job.user_id != User.query.filter_by(username=current_user).first().id:
@@ -366,33 +393,6 @@ def export_pdf(task_id):
 
     return send_file(buffer, as_attachment=True, download_name=f"检测报告_{task_id[:8]}.pdf", mimetype='application/pdf')
 
-
-# ====================== 临时数据库迁移路由（执行一次即可） ======================
-@app.route('/migrate')
-def migrate_db():
-    with app.app_context():
-        try:
-            db.engine.execute("""
-                ALTER TABLE templates 
-                ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50) DEFAULT '本科'
-            """)
-            db.engine.execute("""
-                ALTER TABLE templates 
-                ADD COLUMN IF NOT EXISTS school VARCHAR(100) DEFAULT '通用'
-            """)
-            print("✅ 数据库迁移成功！新增了 sub_category 和 school 字段")
-            return """
-                <h1 style="color:green">✅ 迁移成功！</h1>
-                <p>现在可以正常使用检测和后台管理系统了。</p>
-                <p><strong>请立即删除这个 /migrate 路由！</strong></p>
-            """
-        except Exception as e:
-            print(f"❌ 迁移失败: {str(e)}")
-            return f"""
-                <h1 style="color:red">❌ 迁移失败</h1>
-                <p>{str(e)}</p>
-                <p>请检查数据库权限或手动执行 SQL。</p>
-            """
 
 @app.after_request
 def add_security_headers(response):
