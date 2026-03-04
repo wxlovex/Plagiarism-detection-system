@@ -203,31 +203,31 @@
     {% endif %}
 
     <!-- 其余结果（折叠） -->
-    {% if remaining_matched %}
+    {% if remaining_results %}
     <div class="mt-4">
         <button class="btn btn-outline-secondary w-100" type="button"
-            data-bs-toggle="collapse" data-bs-target="#moreResults"
-            aria-expanded="false" aria-controls="moreResults">
-            ⬇️ 查看其余 {{ remaining_matched|length }} 个结果（点击展开）
+                data-bs-toggle="collapse" data-bs-target="#moreResultsCollapse"
+                aria-expanded="false" aria-controls="moreResultsCollapse">
+            ⬇️ 查看其余 {{ remaining_results|length }} 个结果（点击展开）
         </button>
-        <div class="collapse mt-3" id="moreResults">
+        <div class="collapse mt-3" id="moreResultsCollapse">
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
-                    <tr>
-                        <th>参考模板</th>
-                        <th>相似度</th>
-                        <th>判断</th>
-                    </tr>
+                        <tr>
+                            <th>参考模板</th>
+                            <th>相似度</th>
+                            <th>判断</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    {% for row in remaining_results %}
-                    <tr class="{% if row[1] > 0.7 %}high-sim{% elif row[1] > 0.3 %}medium-sim{% else %}low-sim{% endif %}">
-                        <td>{{ row[0] }}</td>
-                        <td>{{ "%.4f"|format(row[1]) }}</td>
-                        <td>{{ row[2] }}</td>
-                    </tr>
-                    {% endfor %}
+                        {% for row in remaining_results %}
+                        <tr class="{% if row[1] > 0.7 %}table-danger{% elif row[1] > 0.3 %}table-warning{% else %}table-success{% endif %}">
+                            <td>{{ row[0] }}</td>
+                            <td>{{ "%.4f"|format(row[1]) }}</td>
+                            <td>{{ row[2] }}</td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -270,6 +270,7 @@
     {% endif %}
 </div>
 <!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 放在 index.html 底部 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

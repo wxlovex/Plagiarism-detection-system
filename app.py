@@ -391,7 +391,15 @@ def export_pdf(task_id):
     doc.build(story)
     buffer.seek(0)
 
-    return send_file(buffer, as_attachment=True, download_name=f"检测报告_{task_id[:8]}.pdf", mimetype='application/pdf')
+    # 改成这样（兼容 Flask 3.x）
+    from flask import Response
+    return Response(
+        buffer,
+        mimetype='application/pdf',
+        headers={
+            'Content-Disposition': f'attachment; filename=检测报告_{task_id[:8]}.pdf'
+        }
+    )
 
 
 @app.after_request
