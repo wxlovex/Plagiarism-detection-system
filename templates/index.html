@@ -176,10 +176,9 @@
     <h2 class="text-center mb-3">检测报告</h2>
     <!-- 导出PDF报告 -->
     <div class="text-end mb-3">
-        <a href="{{ url_for('export_pdf', task_id=task_id) }}"
-           class="btn btn-danger me-2" target="_blank">
-            📄 导出 PDF 报告
-        </a>
+        <button class="btn btn-danger me-2" onclick="exportReport('pdf')">
+        📄 导出 PDF 报告
+    </button>
     </div>
 
 <!-- Top N 高相似并排对比 -->
@@ -272,5 +271,12 @@
 <!-- Bootstrap JS -->
 <!-- 放在 index.html 底部 -->
 <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script>
+    function exportReport(type) {
+        const taskId = "{{ task_id }}";  // 从模板传入 task_id
+        const url = `/export/${type}/${taskId}`;
+        window.open(url, '_blank');  // 新标签页打开，继承 cookie
+    }
+</script>
 </body>
 </html>
