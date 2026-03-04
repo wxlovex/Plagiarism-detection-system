@@ -176,7 +176,7 @@
     <h2 class="text-center mb-3">检测报告</h2>
     <!-- 导出PDF报告 -->
     <div class="text-end mb-3">
-        <a href="{{ url_for('export_pdf', task_id=job_id if 'job_id' in vars() else task_id) }}"
+        <a href="{{ url_for('export_pdf', task_id=task_id) }}"
            class="btn btn-danger me-2" target="_blank">
             📄 导出 PDF 报告
         </a>
