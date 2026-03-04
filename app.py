@@ -393,13 +393,12 @@ def export_pdf(task_id):
 
     # 改成这样（兼容 Flask 3.x）
     from flask import Response
-    return Response(
-        buffer,
-        mimetype='application/pdf',
-        headers={
-            'Content-Disposition': f'attachment; filename=检测报告_{task_id[:8]}.pdf'
-        }
-    )
+
+    response = make_response(buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename="检测报告_{task_id[:8]}.pdf"'
+    # 注意：filename 用双引号包裹（标准写法），避免中文乱码
+    return response
 
 
 @app.after_request
@@ -408,7 +407,14 @@ def add_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+
+    # 现在可以严格限制，只允许 self + data URI
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "          # 允许内联 JS（Bootstrap 需要）
+        "style-src 'self' 'unsafe-inline'; "           # 允许内联 style
+        "img-src 'self' data:;"                        # 允许 data: URI 的 SVG 图标
+    )
     return response
 
 if __name__ == '__main__':
