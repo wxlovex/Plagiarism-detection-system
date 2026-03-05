@@ -59,6 +59,7 @@ def init_admin():
                 print(f"✅ 管理员账号已存在且角色正确（{ADMIN_USERNAME}）")
 
 app = Flask(__name__)
+app.config['JWT_COOKIE_SAMESITE'] = 'Lax'
 # 注册管理员蓝图
 app.register_blueprint(admin_bp)
 
@@ -292,6 +293,7 @@ def status(task_id):
                                total=len(all_results),
                                threshold=result.get('threshold', 0.7),
                                status='completed',
+                               task_id=task_id,
                                form=form )          # ← 加上 form=form
 
     else:
@@ -330,14 +332,18 @@ def migrate_db():
                 <p>请检查数据库权限或手动执行 SQL。</p>
             """
 
-#导出PDF报告
+
+# 报告导出
 @app.route('/export/pdf/<task_id>')
 @jwt_required()
 def export_pdf(task_id):
     print(f"访问 PDF 导出路由，task_id = {task_id}")
     job = DetectionJob.query.get_or_404(task_id)
     current_user = get_jwt_identity()
-    if job.user_id != User.query.filter_by(username=current_user).first().id:
+
+    # 权限校验
+    user = User.query.filter_by(username=current_user).first()
+    if not user or job.user_id != user.id:
         flash('❌ 只能导出自己的检测报告！')
         return redirect(url_for('index'))
 
@@ -368,16 +374,16 @@ def export_pdf(task_id):
         ['疑似抄袭（高相似）', str(stats.get('疑似抄袭', 0))],
         ['阈值设置', f"{result.get('threshold', 0.7):.2f}"]
     ]
-    t = Table(data, colWidths=[3*inch, 2*inch])
+    t = Table(data, colWidths=[3 * inch, 2 * inch])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#007BFF')),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 12),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.white),
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#007BFF')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     story.append(t)
     story.append(Spacer(1, 30))
@@ -385,22 +391,24 @@ def export_pdf(task_id):
     # 相似段落
     story.append(Paragraph("🔍 相似段落对比（Top 3）", styles['Heading2']))
     for seg in result.get('matched_segments', [])[:3]:
-        story.append(Paragraph(f"<b>模板：</b>{seg['title']}（{seg['score']*100:.1f}% 相似）", styles['Normal']))
+        story.append(Paragraph(f"<b>模板：</b>{seg['title']}（{seg['score'] * 100:.1f}% 相似）", styles['Normal']))
         story.append(Paragraph(f"<b>你的原文：</b>{seg['user_text'][:300]}...", styles['Normal']))
         story.append(Spacer(1, 12))
 
     doc.build(story)
     buffer.seek(0)
 
-    # 改成这样（兼容 Flask 3.x）
-    from flask import Response
+    # ================ 关键修复：中文文件名 + 干净 header ================
+    from urllib.parse import quote
+    filename = f"检测报告_{task_id[:8]}.pdf"
+    encoded_filename = quote(filename)
 
     response = make_response(buffer.getvalue())
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename="检测报告_{task_id[:8]}.pdf"'
-    # 注意：filename 用双引号包裹（标准写法），避免中文乱码
-    return response
+    response.headers['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
+    response.headers['Cache-Control'] = 'no-cache'
 
+    return response
 
 @app.after_request
 def add_security_headers(response):

@@ -273,9 +273,13 @@
 <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script>
     function exportReport(type) {
-        const taskId = "{{ task_id }}";  // 从模板传入 task_id
+        const taskId = "{{ task_id or '' }}";
+        if (!taskId) {
+            alert("❌ 任务ID无效，请刷新页面后重试");
+            return;
+        }
         const url = `/export/${type}/${taskId}`;
-        window.open(url, '_blank');  // 新标签页打开，继承 cookie
+        window.open(url, '_blank');
     }
 </script>
 </body>
