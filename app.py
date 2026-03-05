@@ -172,6 +172,7 @@ def logout():
     flash('已登出。')
     return resp
 
+# 检测主路由
 @app.route('/', methods=['GET', 'POST'])
 @jwt_required()
 def index():
@@ -220,7 +221,7 @@ def index():
     # GET 或验证失败 → 重新渲染表单（关键！）
     return render_template('index.html', current_user=current_user, form=form)
 
-# status 路由保持你原来的最终版（已正确）
+# status 路由
 @app.route('/status/<task_id>')
 @jwt_required()
 def status(task_id):
@@ -329,7 +330,7 @@ def migrate_db():
                 <p>请检查数据库权限或手动执行 SQL。</p>
             """
 
-#导出
+#导出PDF报告
 @app.route('/export/pdf/<task_id>')
 @jwt_required()
 def export_pdf(task_id):
