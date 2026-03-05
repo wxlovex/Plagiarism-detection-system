@@ -25,13 +25,16 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SelectField, FloatField
 from wtforms.validators import DataRequired
 from admin import admin_bp
-# ====================== 报告导出 ======================
+#  报告导出
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from io import BytesIO
+# PDF 中文字体支持
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
 
 # ====================== 启动时自动创建管理员 ======================
@@ -332,18 +335,14 @@ def migrate_db():
                 <p>请检查数据库权限或手动执行 SQL。</p>
             """
 
-
-# 报告导出
+# PDF报告导出
 @app.route('/export/pdf/<task_id>')
 @jwt_required()
 def export_pdf(task_id):
     print(f"访问 PDF 导出路由，task_id = {task_id}")
     job = DetectionJob.query.get_or_404(task_id)
     current_user = get_jwt_identity()
-
-    # 权限校验
-    user = User.query.filter_by(username=current_user).first()
-    if not user or job.user_id != user.id:
+    if job.user_id != User.query.filter_by(username=current_user).first().id:
         flash('❌ 只能导出自己的检测报告！')
         return redirect(url_for('index'))
 
@@ -355,16 +354,33 @@ def export_pdf(task_id):
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+
+    # ==================== 关键修复：注册中文字体 ====================
+    pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+
     styles = getSampleStyleSheet()
+    # 全局设置为中文字体（解决所有方块）
+    styles['Normal'].fontName = 'STSong-Light'
+    styles['Heading1'].fontName = 'STSong-Light'
+    styles['Heading2'].fontName = 'STSong-Light'
+
+    title_style = ParagraphStyle(
+        'Title',
+        parent=styles['Heading1'],
+        fontName='STSong-Light',
+        fontSize=18,
+        spaceAfter=30,
+        alignment=1  # 居中
+    )
+
     story = []
 
     # 标题
-    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=18, spaceAfter=30)
-    story.append(Paragraph(f"毕业论文致谢抄袭检测报告", title_style))
-    story.append(Paragraph(f"任务ID: {task_id}", styles['Normal']))
+    story.append(Paragraph("毕业论文致谢抄袭检测报告", title_style))
+    story.append(Paragraph(f"任务ID: {task_id}　　用户: {current_user}", styles['Normal']))
     story.append(Spacer(1, 20))
 
-    # 统计
+    # 统计表格
     stats = result.get('stats', {})
     data = [
         ['检测项目', '数量'],
@@ -372,42 +388,41 @@ def export_pdf(task_id):
         ['原创（低相似）', str(stats.get('原创', 0))],
         ['中等相似', str(stats.get('中等相似', 0))],
         ['疑似抄袭（高相似）', str(stats.get('疑似抄袭', 0))],
-        ['阈值设置', f"{result.get('threshold', 0.7):.2f}"]
+        ['阈值设置', f"{result.get('threshold', 0.7):.2f}"],
     ]
-    t = Table(data, colWidths=[3 * inch, 2 * inch])
+    t = Table(data, colWidths=[3*inch, 2*inch])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#007BFF')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#007BFF')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'STSong-Light'),   # 表格标题也用中文字体
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
     ]))
     story.append(t)
     story.append(Spacer(1, 30))
 
-    # 相似段落
+    # 相似段落对比（Top 3）
     story.append(Paragraph("🔍 相似段落对比（Top 3）", styles['Heading2']))
     for seg in result.get('matched_segments', [])[:3]:
-        story.append(Paragraph(f"<b>模板：</b>{seg['title']}（{seg['score'] * 100:.1f}% 相似）", styles['Normal']))
-        story.append(Paragraph(f"<b>你的原文：</b>{seg['user_text'][:300]}...", styles['Normal']))
+        story.append(Paragraph(f"<b>模板：</b>{seg['title']}（{seg['score']*100:.1f}% 相似）", styles['Normal']))
+        # 安全处理：去掉 HTML 标签，防止 PDF 报错
+        user_text = re.sub(r'<[^>]+>', '', seg.get('user_text', ''))[:300]
+        story.append(Paragraph(f"<b>你的原文：</b>{user_text}...", styles['Normal']))
         story.append(Spacer(1, 12))
+
+    # 如果有 AIGC 评分（后续可扩展）
+    if 'aigc_score' in result:
+        story.append(Paragraph(f"AIGC 生成概率：{result['aigc_score']}%", styles['Normal']))
 
     doc.build(story)
     buffer.seek(0)
 
-    # ================ 关键修复：中文文件名 + 干净 header ================
-    from urllib.parse import quote
-    filename = f"检测报告_{task_id[:8]}.pdf"
-    encoded_filename = quote(filename)
-
     response = make_response(buffer.getvalue())
     response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
-    response.headers['Cache-Control'] = 'no-cache'
-
+    response.headers['Content-Disposition'] = f'attachment; filename="检测报告_{task_id[:8]}.pdf"'
     return response
 
 @app.after_request
