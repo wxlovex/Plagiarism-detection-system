@@ -3,22 +3,117 @@
 {% block title %}检测报告{% endblock %}
 
 {% block content %}
+<style>
+            body {
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+                color: #007BFF;
+                font-family: 'Arial', sans-serif;
+            }
+            .container {
+                background: rgba(255, 255, 255, 0.9);  /* 半透明白卡，防背景干扰 */
+                border-radius: 15px;
+                 padding: 30px;
+                margin-top: 50px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);  /* 阴影 */
+            }
+            .btn-primary {
+                background: linear-gradient(45deg, #007bff, #0056b3);  /* 渐变蓝按钮 */
+                border: none;
+                border-radius: 25px;
+                padding: 12px 30px;
+                font-weight: bold;
+                transition: transform 0.2s;  /* hover动画 */
+            }
+            .btn-primary:hover {
+                transform: scale(1.05);  /* 轻微放大 */
+                box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+            }
+            .form-control {
+                border-radius: 10px;  /* 圆角输入框 */
+                border: 2px solid #ddd;
+                padding: 12px;
+                transition: border-color 0.3s;
+            }
+            .form-control:focus {
+                border-color: #007bff;  /* 焦点蓝边 */
+                box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            }
+            table th {
+                background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            }
+            .high-sim { background-color: #ffebee; color: #d32f2f; }  /* 高相似红行 */
+            .medium-sim { background-color: #fff3e0; color: #f57c00; }  /* 中等橙行 */
+            .low-sim { background-color: #e8f5e8; color: #388e3c; }  /* 低绿行 */
+            .navbar-brand, .nav-link {
+                color: white !important;
+            }
+            .nav-link:hover {
+                color: #ffc107 !important;
+            }
+</style>
 <div class="container mt-4">
-    <h1 class="text-center mb-4" style="color: #007bff;">毕业论文致谢抄袭检测系统</h1>
 
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    {% if status == 'pending' %}
+    <div class="alert alert-info text-center mt-4" id="progress-area">
+        <h4>🔄 正在检测致谢部分，请稍等...</h4>
+        <div class="progress" style="height: 28px; margin: 20px 0;">
+            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                 role="progressbar" style="width: 30%;" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100">
+                <span id="progress-text" class="fw-bold">30%</span>
+            </div>
+        </div>
+        <small id="progress-status" class="text-muted">正在比对模板库...</small>
     </div>
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
 
+    <script>
+        let taskId = "{{ task_id }}";
+        let attempts = 0;
+        const maxAttempts = 90;   // 最多等 72 秒
+
+        function updateProgress() {
+            attempts++;
+            fetch(`/status/${taskId}?json=1`)
+                .then(res => res.json())
+                .then(data => {
+                    let progress = data.progress || 30;
+                    document.getElementById('progress-bar').style.width = progress + '%';
+                    document.getElementById('progress-bar').setAttribute('aria-valuenow', progress);
+                    document.getElementById('progress-text').textContent = progress + '%';
+
+                    if (data.status === 'completed' || data.status === 'SUCCESS') {
+                        location.reload();   // 检测完成自动刷新显示报告和高亮对比
+                    } else if (attempts > maxAttempts) {
+                        alert('检测时间过长，请手动刷新页面');
+                    } else {
+                        setTimeout(updateProgress, 800);
+                    }
+                })
+                .catch(() => {
+                    if (attempts < maxAttempts) {
+                        setTimeout(updateProgress, 1500);
+                    }
+                });
+        }
+
+        setTimeout(updateProgress, 600);
+    </script>
+    {% endif %}
+
+    <h1 class="text-center mb-4" style="color: #007bff;">毕业论文致谢抄袭检测系统</h1>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
     <form method="POST" action="{{ url_for('index') }}" enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
+            {{ form.hidden_tag() }}   <!-- 只保留这一行，删除下面所有手动 hidden csrf -->
 
         <div class="mb-3">
             <label class="form-label fw-bold">上传测试文件：</label>
@@ -37,7 +132,6 @@
             <input type="submit" class="btn btn-primary" value="开始检测">
         </div>
     </form>
-
     {% if results %}
 
     <hr class="my-4">
