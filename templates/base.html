@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}致谢抄袭检测系统{% endblock %}</title>
+    <link href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- ==================== 统一导航栏（所有页面共用） ==================== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">致谢抄袭检测系统</a>
+            <div class="navbar-nav ms-auto">
+                {% if current_user %}
+                    <span class="nav-link">欢迎，{{ current_user }}！</span>
+                    <a class="nav-link btn btn-outline-light me-2" href="{{ url_for('history') }}">📋 我的历史</a>
+                    {% if current_user == 'admin' %}
+                    <a class="nav-link btn btn-outline-light me-2" href="{{ url_for('admin.templates_list') }}">管理后台</a>
+                    {% endif %}
+                    <a class="nav-link btn btn-outline-light" href="{{ url_for('logout') }}">登出</a>
+                {% else %}
+                    <a class="nav-link btn btn-outline-light" href="{{ url_for('login') }}">登录</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
