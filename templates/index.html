@@ -67,6 +67,7 @@
             <span class="nav-link">欢迎，{{ current_user }}！</span>
             <a class="nav-link btn btn-outline-light" href="{{ url_for('logout') }}">登出</a>
         </div>
+        <a class="nav-link btn btn-outline-light me-2" href="{{ url_for('history') }}">我的历史</a>
     </div>
 </nav>
 
@@ -151,27 +152,6 @@
     </form>
     {% if results %}
 
-<!--    {% if matched_segments %}-->
-<!--    <hr class="my-5">-->
-<!--    <h3 class="text-center mb-4">🔍 相似段落并排对比</h3>-->
-
-<!--    {% for seg in matched_segments %}-->
-<!--    <div class="row mb-5 border rounded p-3">-->
-<!--        <div class="col-md-6">-->
-<!--            <h5 class="text-danger">你的原文</h5>-->
-<!--            <pre class="bg-light p-3" style="white-space: pre-wrap;">{{ seg.user_text | safe }}</pre>-->
-<!--        </div>-->
-<!--        <div class="col-md-6">-->
-<!--            <h5 class="text-danger">相似模板：{{ seg.title }}</h5>-->
-<!--            <pre class="bg-light p-3" style="white-space: pre-wrap;">{{ seg.template_text | safe }}</pre>-->
-<!--            <p class="text-end">-->
-<!--                <span class="badge bg-danger">{{ "%.1f"|format(seg.score * 100) }}% 相似</span>-->
-<!--            </p>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--    {% endfor %}-->
-<!--    {% endif %}-->
-
     <hr class="my-4">
     <h2 class="text-center mb-3">检测报告</h2>
     <!-- 导出PDF报告 -->
@@ -182,20 +162,30 @@
     </div>
 
 <!-- Top N 高相似并排对比 -->
+    <!-- Top N 高相似卡片 -->
     {% if matched_segments %}
     <h5 class="text-danger mb-3">🔥 前 {{ matched_segments|length }} 个最相似模板</h5>
     {% for seg in matched_segments %}
-    <div class="row mb-4 border rounded p-3 bg-light">
-        <div class="col-md-6">
-            <h6 class="text-danger">你的原文（高亮部分）</h6>
-            <pre class="bg-white p-3 border" style="white-space: pre-wrap; font-size:0.95rem;">{{ seg.user_text | safe }}</pre>
-        </div>
-        <div class="col-md-6">
-            <h6 class="text-danger">相似模板：{{ seg.title }}</h6>
-            <pre class="bg-white p-3 border" style="white-space: pre-wrap; font-size:0.95rem;">{{ seg.template_text | safe }}</pre>
-            <p class="text-end mt-2">
-                <span class="badge bg-danger fs-6">{{ "%.1f"|format(seg.score * 100) }}% 相似</span>
-            </p>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <strong>{{ seg.title }}</strong>
+                    <span class="badge bg-danger float-end">{{ "%.1f"|format(seg.score * 100) }}% 相似</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-danger">你的原文</h6>
+                            <pre class="bg-white p-3 border">{{ seg.user_text | safe }}</pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger">相似模板</h6>
+                            <pre class="bg-white p-3 border">{{ seg.template_text | safe }}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     {% endfor %}

@@ -336,6 +336,28 @@ def migrate_db():
             """
 
 
+# 检测历史记录
+@app.route('/history')
+@jwt_required()
+def history():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(username=current_user).first()
+
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '').strip()
+
+    query = DetectionJob.query.filter_by(user_id=user.id)
+    if search:
+        query = query.filter(DetectionJob.test_filename.like(f'%{search}%'))
+
+    jobs = query.order_by(DetectionJob.created_at.desc()).paginate(page=page, per_page=10)
+
+    return render_template('history.html',
+                           jobs=jobs,
+                           search=search,
+                           current_user=current_user)
+
+
 # 报告导出
 @app.route('/export/pdf/<task_id>')
 @jwt_required()
@@ -369,6 +391,7 @@ def export_pdf(task_id):
     styles['Heading1'].fontName = 'STSong-Light'
     styles['Heading2'].fontName = 'STSong-Light'
 
+    #标题
     title_style = ParagraphStyle(
         'Title',
         parent=styles['Heading1'],
@@ -400,7 +423,7 @@ def export_pdf(task_id):
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#007BFF')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), 'STSong-Light'),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
