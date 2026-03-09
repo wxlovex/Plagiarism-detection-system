@@ -174,6 +174,7 @@ pipeline {
                         sudo mkdir -p /opt/plagiarism-app
                         sudo mv app.tar docker-compose.yml .env /opt/plagiarism-app/ 2>/dev/null || true
                         cd /opt/plagiarism-app
+                        tar -zxvf app.tar
 
                         docker compose down
                         docker compose up -d --build
