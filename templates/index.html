@@ -53,7 +53,14 @@
                 color: #ffc107 !important;
             }
 </style>
+
 <div class="container mt-4">
+
+    <!-- ==================== 强制调试信息（始终显示） ==================== -->
+    <div class="alert alert-info">
+        <strong>🔍 AIGC 数据调试（强制显示）：</strong><br>
+        <pre style="background:#f8f9fa;padding:15px;font-size:0.85em;white-space:pre-wrap;">{{ aigc_analysis | tojson(indent=2) | default('【数据为空】') }}</pre>
+    </div>
 
     {% if status == 'pending' %}
     <div class="alert alert-info text-center mt-4" id="progress-area">
