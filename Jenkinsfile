@@ -175,6 +175,7 @@ pipeline {
                         sudo mv app.tar docker-compose.yml .env /opt/plagiarism-app/ 2>/dev/null || true
                         cd /opt/plagiarism-app
 
+                        docker compose down
                         docker compose up -d --build
                         echo '✅ 部署成功！访问 http://${TARGET_HOST}:5000'
                     "
