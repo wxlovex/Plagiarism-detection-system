@@ -297,6 +297,7 @@ def status(task_id):
                                threshold=result.get('threshold', 0.7),
                                status='completed',
                                task_id=task_id,
+                               aigc_analysis=result.get('aigc_analysis', {}),
                                form=form )          # ← 加上 form=form
 
     else:
