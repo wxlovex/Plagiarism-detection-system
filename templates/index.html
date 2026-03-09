@@ -137,8 +137,12 @@
     <hr class="my-4">
     <h2 class="text-center mb-3">检测报告</h2>
 
+    <details>
+        <summary>🔍 AIGC 调试信息（点开查看数据是否正常）</summary>
+        <pre style="background:#f8f9fa;padding:10px;font-size:0.9em;">{{ aigc_analysis | tojson(indent=2) }}</pre>
+    </details>
         <!-- 高级 AIGC 分析 -->
-    {% if aigc_analysis %}
+    {% if aigc_analysis and aigc_analysis.total_score is defined %}
     <hr class="my-4">
     <h3 class="text-center mb-3">🤖 高级 AIGC 生成概率分析</h3>
 
@@ -180,6 +184,12 @@
 
     <div class="alert alert-info">
         <strong>结论：</strong> {{ aigc_analysis.conclusion }}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-warning">
+        <strong>⚠️ AIGC 分析数据为空</strong>
     </div>
     {% endif %}
 
