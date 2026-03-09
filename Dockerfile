@@ -40,11 +40,9 @@ RUN mkdir -p uploads && chmod 755 uploads
 EXPOSE 5000
 
 CMD ["sh", "-c", "cd /app && \
-     PYTHONPATH=. celery -A tasks worker --loglevel=info --concurrency=2 & \
      gunicorn --bind 0.0.0.0:5000 \
                --workers 3 \
-               --timeout 300 \
+               --timeout 180 \
                --preload \
-               --worker-class gevent \
                --log-level info \
                app:app"]

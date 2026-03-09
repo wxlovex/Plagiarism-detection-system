@@ -118,6 +118,7 @@ pipeline {
         TARGET_USER = 'user2201'
         REDIS_HOST  = '192.168.119.102'
         REDIS_PORT  = '6379'
+        IMAGE_NAME = 'plagiarism-detection:latest'
     }
 
     stages {
@@ -151,31 +152,33 @@ pipeline {
             steps {
                 echo 'Deploying to hadoop103...'
                 sh '''
-                    docker save -o app.tar plagiarism-detection:latest
+                    # 打包镜像
+                    docker save -o app.tar ${IMAGE_NAME}
 
                     sudo chown ${USER}:${USER} app.tar
                     chmod 644 app.tar
 
-                    sudo -u ${TARGET_USER} scp -o StrictHostKeyChecking=no app.tar ${TARGET_USER}@${TARGET_HOST}:/tmp/
+                    sudo -u ${TARGET_USER} scp -o StrictHostKeyChecking=no \
+                        app.tar docker-compose.yml .env \
+                        ${TARGET_USER}@${TARGET_HOST}:/tmp/
 
                     sudo -u ${TARGET_USER} ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_HOST} "
+
+                        cd /tmp
+                        # 加载镜像
                         docker load -i /tmp/app.tar
-                        docker rm -f plagiarism-app || true
-                        docker run -d \
-                          -p 5000:5000 \
-                          --name plagiarism-app \
-                          --restart=always \
-                          -e MYSQL_HOST=192.168.119.102 \
-                          -e MYSQL_PORT=3308 \
-                          -e MYSQL_USER=plagiarism \
-                          -e MYSQL_PASSWORD=123456 \
-                          -e MYSQL_DATABASE=plagiarism_db \
-                          -e REDIS_HOST=192.168.119.102 \
-                          -e REDIS_PORT=6379 \
-                          plagiarism-detection:latest
-                        rm /tmp/app.tar
+                        # 停止旧服务
+                        docker compose down || true
+
+                        # 移动文件到正确位置（建议固定目录）
+                        sudo mkdir -p /opt/plagiarism-app
+                        sudo mv app.tar docker-compose.yml .env /opt/plagiarism-app/ 2>/dev/null || true
+                        cd /opt/plagiarism-app
+
+                        docker compose up -d --build
                         echo '✅ 部署成功！访问 http://${TARGET_HOST}:5000'
                     "
+                    # 清理临时文件
                     rm -f app.tar
                 '''
             }

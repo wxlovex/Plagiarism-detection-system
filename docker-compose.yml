@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  web:
+    build: .
+    container_name: plagiarism-web
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file: .env
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - redis
+      - worker
+    command: gunicorn --bind 0.0.0.0:5000 --workers 3 --timeout 180 --preload app:app
+
+  worker:
+    build: .
+    container_name: plagiarism-worker
+    restart: always
+    env_file: .env
+    volumes:
+      - ./uploads:/app/uploads
+    command: celery -A tasks worker --loglevel=info --concurrency=2
+
+  redis:
+    image: redis:7-alpine
+    container_name: plagiarism-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
