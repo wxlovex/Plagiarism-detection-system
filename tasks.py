@@ -6,7 +6,7 @@ from celery import Celery
 from config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 from extractors import extract_acknowledgements, extract_text
 import json
-from utils import compute_similarity, judge_plagiarism
+from utils import compute_similarity, judge_plagiarism, aigc_score
 from bleach import clean
 
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
@@ -84,12 +84,15 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 elif '中等相似' in jud: stats['中等相似'] += 1
                 else: stats['疑似抄袭'] += 1
 
+            aigc_analysis = aigc_score(text1)
+
             result = {
                 'results': batch_results,
                 'stats': stats,
                 'total': len(batch_results),
                 'threshold': threshold,
-                'matched_segments': matched_segments
+                'matched_segments': matched_segments,
+                'aigc_analysis': aigc_analysis
             }
 
             # 强制保存

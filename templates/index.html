@@ -137,6 +137,52 @@
     <hr class="my-4">
     <h2 class="text-center mb-3">检测报告</h2>
 
+        <!-- 高级 AIGC 分析 -->
+    {% if aigc_analysis %}
+    <hr class="my-4">
+    <h3 class="text-center mb-3">🤖 高级 AIGC 生成概率分析</h3>
+
+    <div class="row">
+        <!-- 总体分数卡片 -->
+        <div class="col-md-4">
+            <div class="card text-center border-0 shadow">
+                <div class="card-body">
+                    <h1 class="display-4 text-danger">{{ aigc_analysis.total_score }}%</h1>
+                    <p class="text-muted">AI生成概率</p>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-danger" style="width: {{ aigc_analysis.total_score }}%"></div>
+                    </div>
+                    <small class="text-muted">置信度: {{ aigc_analysis.confidence }}%</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 雷达图 -->
+        <div class="col-md-8">
+            <canvas id="aigcRadar" style="max-height: 280px;"></canvas>
+        </div>
+    </div>
+
+    <!-- 维度详细分析 -->
+    <div class="row mt-4">
+        {% for dim_name, score in aigc_analysis.dimensions.items() %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="text-primary">{{ dim_name|replace('_', ' ').title() }}</h6>
+                    <h4 class="text-danger">{{ score }}</h4>
+                    <small class="text-muted">（越高越像AI）</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="alert alert-info">
+        <strong>结论：</strong> {{ aigc_analysis.conclusion }}
+    </div>
+    {% endif %}
+
     <!-- 导出PDF报告 -->
     <div class="text-end mb-3">
         <button class="btn btn-danger me-2" onclick="exportReport('pdf')">
@@ -230,6 +276,34 @@
 
     {% endif %}
 </div>
+
+<!-- Chart.js + 雷达图 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if aigc_analysis %}
+    const ctx = document.getElementById('aigcRadar');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['句子均匀度', '高频词重复', '词汇丰富度', '过渡词使用', '标点多样性'],
+            datasets: [{
+                label: 'AI特征强度',
+                data: [
+                    {{ aigc_analysis.dimensions.sentence_uniformity }},
+                    {{ aigc_analysis.dimensions.burstiness }},
+                    {{ aigc_analysis.dimensions.vocabulary_richness }},
+                    {{ aigc_analysis.dimensions.transition_words }},
+                    {{ aigc_analysis.dimensions.punctuation_diversity }}
+                ],
+                backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                borderColor: '#dc3545',
+                borderWidth: 2
+            }]
+        },
+        options: { scales: { r: { min: 0, max: 100 } } }
+    });
+    {% endif %}
+</script>
 
 <!-- Bootstrap JS + 导出函数 -->
 <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>

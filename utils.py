@@ -57,48 +57,71 @@ def get_templates_from_db(category):
 
 # ====================== AIGC 检测升级版 v2（多维度融合） ======================
 def aigc_score(text):
-    """升级版 AIGC 检测：多维度统计融合，准确率显著提升"""
+    """高级 AIGC 检测报告 - 返回详细多维度数据"""
     if not text or len(text) < 50:
-        return 0
+        return {
+            'total_score': 0,
+            'confidence': 0,
+            'dimensions': {},
+            'conclusion': '文本过短，无法准确判断'
+        }
 
-    # 分句
     sentences = re.split(r'[。！？.!?]', text)
     sentences = [s.strip() for s in sentences if len(s.strip()) > 5]
-    if len(sentences) < 3:
-        return 25
-
-    # 1. 原有特征：句子长度标准差（AI 更均匀）
-    lengths = [len(s) for s in sentences]
-    mean_len = sum(lengths) / len(lengths)
-    variance = sum((l - mean_len) ** 2 for l in lengths) / len(lengths)
-
-    # 2. 原有特征：Burstiness（高频词重复）
     words = jieba.lcut(text)
+
+    # ==================== 5个核心维度计算 ====================
+    lengths = [len(s) for s in sentences]
+    mean_len = sum(lengths) / len(lengths) if lengths else 0
+    variance = sum((l - mean_len) ** 2 for l in lengths) / len(lengths) if lengths else 0
+
     word_freq = {}
     for w in words:
         if len(w) > 1:
             word_freq[w] = word_freq.get(w, 0) + 1
     max_freq = max(word_freq.values()) if word_freq else 1
-    burstiness = max_freq / len(words) if len(words) > 0 else 0
+    burstiness = max_freq / len(words) if words else 0
 
-    # 新增特征 3：词汇丰富度（AI 词汇更单一）
-    unique_ratio = len(word_freq) / len(words) if len(words) > 0 else 0
+    unique_ratio = len(word_freq) / len(words) if words else 0
 
-    # 新增特征 4：常见 AI 过渡词频率（AI 特别爱用这些词）
     ai_transitions = {'然而', '因此', '总之', '另外', '此外', '值得一提', '需要注意的是', '值得注意的是', '综上所述', '总而言之'}
     transition_count = sum(1 for w in words if w in ai_transitions)
     transition_ratio = transition_count / len(sentences) if sentences else 0
 
-    # 新增特征 5：标点符号多样性（AI 标点使用更规律）
     punct = re.findall(r'[，。！？；：、]', text)
     punct_diversity = len(set(punct)) / len(punct) if punct else 0
 
-    # 加权融合打分（经过大量测试调优）
-    score = 0
-    score += (variance < 28) * 30          # AI 句子长度更均匀
-    score += (burstiness > 0.085) * 25     # AI 高频词重复更严重
-    score += (unique_ratio < 0.45) * 20    # AI 词汇重复度高
-    score += (transition_ratio > 0.12) * 15 # AI 过渡词使用频繁
-    score += (punct_diversity < 0.65) * 10 # AI 标点使用单一
+    # ==================== 维度打分（0-100） ====================
+    dim_sentence_uniformity = max(0, 100 - variance * 2)          # 句子长度均匀度
+    dim_burstiness = min(100, burstiness * 800)                   # 高频词重复度
+    dim_vocabulary_richness = max(0, (unique_ratio - 0.3) * 200)  # 词汇丰富度
+    dim_transition_words = min(100, transition_ratio * 600)       # AI过渡词
+    dim_punctuation = max(0, (punct_diversity - 0.4) * 200)       # 标点多样性
 
-    return min(98, max(8, int(score)))
+    dimensions = {
+        'sentence_uniformity': round(dim_sentence_uniformity, 1),
+        'burstiness': round(dim_burstiness, 1),
+        'vocabulary_richness': round(dim_vocabulary_richness, 1),
+        'transition_words': round(dim_transition_words, 1),
+        'punctuation_diversity': round(dim_punctuation, 1)
+    }
+
+    # ==================== 总体分数与置信度 ====================
+    total_score = int(0.25*dim_sentence_uniformity +
+                      0.25*dim_burstiness +
+                      0.2*dim_vocabulary_richness +
+                      0.2*dim_transition_words +
+                      0.1*dim_punctuation)
+
+    confidence = min(95, max(40, 100 - abs(total_score - 50) * 0.8))
+
+    conclusion = "高度疑似AI生成" if total_score > 75 else \
+                 "可能为AI辅助写作" if total_score > 55 else \
+                 "更可能是人工撰写"
+
+    return {
+        'total_score': total_score,
+        'confidence': confidence,
+        'dimensions': dimensions,
+        'conclusion': conclusion
+    }
