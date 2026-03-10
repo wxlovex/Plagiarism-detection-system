@@ -16,7 +16,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, render_template, request, flash, redirect, url_for, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, unset_jwt_cookies, \
-    set_access_cookies, get_jwt, current_user
+    set_access_cookies, get_jwt, current_user , unset_jwt_cookies
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import DB_CONFIG, JWT_SECRET_KEY, redis_client, ADMIN_USERNAME, ADMIN_DEFAULT_PASSWORD
 from models import db, User, Template, DetectionJob
@@ -84,6 +84,31 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 csrf = CSRFProtect(app)
 jwt = JWTManager(app)
+
+#JWT 过期/无效友好处理
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    """Token 过期时自动跳转登录页 + 清除旧 Cookie"""
+    resp = make_response(redirect(url_for('login')))
+    unset_jwt_cookies(resp)
+    flash('⚠️ 您的登录已过期，请重新登录！', 'warning')
+    return resp
+
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    """Token 无效时自动跳转"""
+    resp = make_response(redirect(url_for('login')))
+    unset_jwt_cookies(resp)
+    flash('⚠️ 登录信息无效，请重新登录！', 'warning')
+    return resp
+
+
+@jwt.unauthorized_loader
+def unauthorized_callback(error):
+    """未登录时访问保护页面"""
+    flash('⚠️ 请先登录系统！', 'warning')
+    return redirect(url_for('login'))
 
 # 创建表单类
 class DetectionForm(FlaskForm):
