@@ -193,34 +193,50 @@
     </button>
     </div>
 
-    <!-- Top N 高相似并排对比 -->
+        <!-- Top N 高相似对比（竖向美化版） -->
     {% if matched_segments %}
     <h5 class="text-danger mb-3">🔥 前 {{ matched_segments|length }} 个最相似模板</h5>
     {% for seg in matched_segments %}
-    <div class="row mb-4 border rounded p-3 bg-light">
-        <div class="col-md-6">
-            <h6 class="text-danger">你的原文（高亮部分）</h6>
-            <pre class="bg-white p-3 border">{{ seg.user_text | safe }}</pre>
+    <div class="mb-5 border border-danger rounded-3 overflow-hidden shadow-sm">
+        <!-- 你的原文 -->
+        <div class="bg-white p-4 border-bottom">
+            <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-danger fs-6 me-2">你的原文</span>
+                <small class="text-muted">高亮部分为相似片段</small>
+            </div>
+            <pre class="bg-light p-3 border rounded mb-0 text-break" style="white-space: pre-wrap; font-size: 0.95rem;">{{ seg.user_text | safe }}</pre>
         </div>
-        <div class="col-md-6">
-            <h6 class="text-danger">相似模板：{{ seg.title }}</h6>
-            <pre class="bg-white p-3 border">{{ seg.template_text | safe }}</pre>
-            <p class="text-end mt-2">
+
+        <!-- 箭头分隔 -->
+        <div class="text-center py-2 bg-light border-bottom">
+            <i class="bi bi-arrow-down-circle-fill text-danger fs-3"></i>
+        </div>
+
+        <!-- 相似模板 -->
+        <div class="bg-white p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-primary fs-6">相似模板：{{ seg.title }}</span>
                 <span class="badge bg-danger fs-6">{{ "%.1f"|format(seg.score * 100) }}% 相似</span>
-            </p>
+            </div>
+            <pre class="bg-light p-3 border rounded mb-0 text-break" style="white-space: pre-wrap; font-size: 0.95rem;">{{ seg.template_text | safe }}</pre>
         </div>
     </div>
     {% endfor %}
     {% endif %}
 
-    <!-- 其余结果（折叠） -->
+        <!-- 其余结果（折叠）- 已修复双击收回 -->
     {% if remaining_results %}
     <div class="mt-4">
-        <button class="btn btn-outline-secondary w-100" type="button"
-                data-bs-toggle="collapse" data-bs-target="#moreResultsCollapse"
-                aria-expanded="false" aria-controls="moreResultsCollapse">
-            ⬇️ 查看其余 {{ remaining_results|length }} 个结果（点击展开）
+        <button class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center px-4 py-3"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#moreResultsCollapse"
+                aria-expanded="false"
+                aria-controls="moreResultsCollapse">
+            <span>⬇️ 查看其余 {{ remaining_results|length }} 个结果</span>
+            <span class="collapse-icon">▼</span>
         </button>
+
         <div class="collapse mt-3" id="moreResultsCollapse">
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
@@ -309,7 +325,6 @@
 </script>
 
 <!-- Bootstrap JS + 导出函数 -->
-<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script>
     function exportReport(type) {
         const taskId = "{{ task_id or '' }}";
