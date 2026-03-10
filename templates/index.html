@@ -56,10 +56,6 @@
 
 <div class="container mt-4">
 
-    <!-- ==================== 强制调试信息（始终显示） ==================== -->
-    <div class="alert alert-info">
-        <strong>🔍 AIGC 数据调试（强制显示）：</strong><br>
-<pre style="background:#f8f9fa;padding:15px;font-size:0.85em;white-space:pre-wrap;">{{ aigc_analysis|default({})|tojson(indent=2) }}</pre>    </div>
 
     {% if status == 'pending' %}
     <div class="alert alert-info text-center mt-4" id="progress-area">
@@ -143,35 +139,30 @@
     <hr class="my-4">
     <h2 class="text-center mb-3">检测报告</h2>
 
-    <!-- 调试输出（请保留，先确认数据） -->
-    <details>
-        <summary>🔍 AIGC 调试信息（点开查看数据是否正常）</summary>
-        <pre style="background:#f8f9fa;padding:10px;font-size:0.9em;">{{ aigc_analysis|default({})|tojson(indent=2) }}</pre>
-    </details>
 
         <!--  高级 AIGC 分析（强制显示）-->
     {% if aigc_analysis and aigc_analysis.total_score is defined %}
     <hr class="my-4">
     <h3 class="text-center mb-3">🤖 高级 AIGC 生成概率分析</h3>
 
-    <div class="row">
-        <!-- 总体分数卡片 -->
-        <div class="col-md-4">
-            <div class="card text-center border-0 shadow">
-                <div class="card-body">
-                    <h1 class="display-4 text-danger">{{ aigc_analysis.total_score }}%</h1>
-                    <p class="text-muted">AI生成概率</p>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar bg-danger" style="width: {{ aigc_analysis.total_score }}%"></div>
-                    </div>
-                    <small class="text-muted">置信度: {{ aigc_analysis.confidence }}%</small>
+    <!-- 居中大分数卡片 -->
+    <div class="text-center mb-4">
+        <div class="card border-0 shadow mx-auto" style="max-width: 420px;">
+            <div class="card-body">
+                <h1 class="display-1 fw-bold text-danger mb-1">{{ aigc_analysis.total_score }}%</h1>
+                <p class="h5 text-muted mb-3">AI生成概率</p>
+                <div class="progress mb-3" style="height: 12px; max-width: 280px; margin: 0 auto;">
+                    <div class="progress-bar bg-danger" style="width: {{ aigc_analysis.total_score }}%"></div>
                 </div>
+                <small class="text-muted">检测置信度: <strong>{{ aigc_analysis.confidence }}%</strong></small>
             </div>
         </div>
+    </div>
 
-        <!-- 雷达图 -->
-        <div class="col-md-8">
-            <canvas id="aigcRadar" style="max-height: 280px;"></canvas>
+    <!-- 雷达图 -->
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <canvas id="aigcRadar" style="max-height: 320px;"></canvas>
         </div>
     </div>
 
@@ -179,10 +170,10 @@
     <div class="row mt-4">
         {% for dim_name, score in aigc_analysis.dimensions.items() %}
         <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h6 class="text-primary">{{ dim_name|replace('_', ' ')|title }}</h6>
-                    <h4 class="text-danger">{{ score }}</h4>
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="text-primary">{{ dim_name|replace('_', ' ').title() }}</h6>
+                    <h3 class="text-danger fw-bold">{{ score }}</h3>
                     <small class="text-muted">（越高越像AI）</small>
                 </div>
             </div>
@@ -190,12 +181,8 @@
         {% endfor %}
     </div>
 
-    <div class="alert alert-info">
-        <strong>结论：</strong> {{ aigc_analysis.conclusion }}
-    </div>
-    {% else %}
-    <div class="alert alert-warning">
-        <strong>⚠️ AIGC 分析数据为空</strong>（请把页面上的调试信息复制给我）
+    <div class="alert alert-info text-center">
+        <strong>系统结论：</strong> {{ aigc_analysis.conclusion }}
     </div>
     {% endif %}
 
