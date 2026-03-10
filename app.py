@@ -121,21 +121,26 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.hashed_password, password):
-            access_token = create_access_token(identity=username)
+            # access_token = create_access_token(identity=username)
+            selected_role = request.form.get('login_role')  # 获取单选框的值
 
-            # ==================== 关键修改：根据角色自动跳转 ====================
-            if user.role == 'admin':
-                target_url = url_for('admin.templates_list')  # 管理员 → 模板管理后台
-                flash('✅ 管理员登录成功！已自动进入模板管理后台')
-            else:
-                target_url = url_for('index')  # 普通用户 → 首页
-                flash('✅ 登录成功！')
+            if selected_role == 'admin' and user.role != 'admin':
+                flash('❌ 该账号没有管理员权限！请选择“普通用户”登录', 'danger')
+                return redirect(url_for('login'))
 
-            resp = make_response(redirect(target_url))
-            set_access_cookies(resp, access_token)
-            return resp
+            if selected_role == 'student' and user.role != 'student':
+                flash('❌ 该账号为管理员账号，请选择“管理员”登录', 'danger')
+                return redirect(url_for('login'))
 
-        flash('用户名或密码错误！')
+                # 通过校验 → 正常登录
+                login_user(user)
+                access_token = create_access_token(identity=str(user.id))
+                resp = make_response(redirect(url_for('index')))
+                set_access_cookies(resp, access_token)
+                flash(f'✅ 欢迎回来，{user.username}！', 'success')
+                return resp
+    else:
+        flash('用户名或密码错误！','danger')
 
     return render_template('login.html')
 

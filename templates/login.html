@@ -85,16 +85,14 @@
 
             <!-- 新增：角色选择 -->
             <div class="mb-4" >
-                <label class="form-label">登录身份</label>
-                <div class="d-flex gap-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="login_role" value="student" id="role_student" checked>
-                        <label class="form-check-label" for="role_student">普通用户</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="login_role" value="admin" id="role_admin">
-                        <label class="form-check-label" for="role_admin">管理员</label>
-                    </div>
+                <label class="form-label fw-bold">请选择登录身份：</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="login_role" id="role_student" value="student" checked>
+                    <label class="form-check-label" for="role_student">普通用户登录</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="login_role" id="role_admin" value="admin">
+                    <label class="form-check-label" for="role_admin">管理员登录</label>
                 </div>
             </div>
 
