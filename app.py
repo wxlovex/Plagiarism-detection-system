@@ -141,18 +141,19 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
 @app.route('/login', methods=['GET', 'POST'])
 @jwt_required(optional=True)
 def login():
-    if current_user.is_authenticated:          # 已登录用户直接跳转
+    # 安全判断：如果已有有效 Token 则自动跳转首页
+    if get_jwt_identity():
         return redirect(url_for('index'))
 
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        selected_role = request.form.get('login_role')   # 关键：获取单选框选择
+        selected_role = request.form.get('login_role')
 
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
-            # ==================== 强制校验角色选择 ====================
+            # 强制校验角色选择
             if selected_role == 'admin' and user.role != 'admin':
                 flash('❌ 该账号没有管理员权限！请选择“普通用户”登录', 'danger')
                 return redirect(url_for('login'))
@@ -161,7 +162,7 @@ def login():
                 flash('❌ 该账号为管理员，请选择“管理员”登录', 'danger')
                 return redirect(url_for('login'))
 
-            # ==================== 登录成功 ====================
+            # 登录成功
             access_token = create_access_token(identity=str(user.id))
             resp = make_response(redirect(url_for('index')))
             set_access_cookies(resp, access_token)
