@@ -6,6 +6,8 @@ from celery import Celery
 from config import CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 from extractors import extract_acknowledgements, extract_text
 import json
+
+from models import User
 from utils import compute_similarity, judge_plagiarism, aigc_score
 from bleach import clean
 
@@ -94,6 +96,14 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 'matched_segments': matched_segments,
                 'aigc_analysis': aigc_analysis
             }
+
+            #使用传入的 user_id 更新检测次数
+            if user_id:
+                with app.app_context():
+                    user = User.query.get(user_id)
+                    if user:
+                        user.detection_count += 1
+                        db.session.commit()
 
             # 强制保存
             job = DetectionJob.query.get(self.request.id)

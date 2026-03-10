@@ -1,3 +1,5 @@
+from jieba.lac_small.predict import folder
+from werkzeug.datastructures import file_storage
 from werkzeug.utils import secure_filename, send_file
 from detector import read_file
 from utils import compute_similarity, judge_plagiarism, get_templates_from_db, aigc_score
@@ -110,6 +112,12 @@ def unauthorized_callback(error):
     flash('⚠️ 请先登录系统！', 'warning')
     return redirect(url_for('login'))
 
+# 让 current_user 正确加载 User 对象
+@jwt.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity = jwt_data["sub"]
+    return User.query.get(int(identity))
+
 # 创建表单类
 class DetectionForm(FlaskForm):
     test_file = FileField('测试文件', validators=[DataRequired()])
@@ -217,6 +225,8 @@ def logout():
 def index():
     current_user = get_jwt_identity()
     form = DetectionForm()   # 每次都实例化
+    current_user_id = int(current_user.id) if current_user and hasattr(current_user, 'id') else None
+
 
     if request.method == 'POST' and form.validate_on_submit():
         test_file = form.test_file.data
@@ -241,7 +251,12 @@ def index():
             flash('用户异常')
             return redirect(url_for('logout'))
 
-        task = detect_plagiarism.delay(filename, category, threshold, user.id)
+        task = detect_plagiarism.delay(
+                file_storage=file_storage,          # 你的原有参数
+                folder=folder,
+                threshold=threshold,
+                user_id=current_user_id
+        )
 
         job = DetectionJob(
             id=task.id,
