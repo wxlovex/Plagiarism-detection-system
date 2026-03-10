@@ -102,7 +102,7 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 with app.app_context():
                     user = User.query.get(user_id)
                     if user:
-                        user.detection_count += 1
+                        user.detection_count = (user.detection_count or 0) + 1
                         db.session.commit()
 
             # 强制保存

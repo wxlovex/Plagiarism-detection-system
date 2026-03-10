@@ -13,6 +13,7 @@ class User(db.Model):
     hashed_password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='student')  # student / teacher / admin
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    detection_count = db.Column(db.Integer, default=0)
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)

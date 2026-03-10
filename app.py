@@ -366,11 +366,12 @@ def status(task_id):
                                form=form)          # ← 也加上 form=form
 
 
-# ====================== 临时数据库迁移路由（执行一次即可） ======================
+# ====================== 一键数据库字段迁移（执行一次即可） ======================
 @app.route('/migrate')
 def migrate_db():
     with app.app_context():
         try:
+            # 之前模板迁移
             db.engine.execute("""
                 ALTER TABLE templates 
                 ADD COLUMN IF NOT EXISTS sub_category VARCHAR(50) DEFAULT '本科'
@@ -379,18 +380,23 @@ def migrate_db():
                 ALTER TABLE templates 
                 ADD COLUMN IF NOT EXISTS school VARCHAR(100) DEFAULT '通用'
             """)
-            print("✅ 数据库迁移成功！新增了 sub_category 和 school 字段")
+
+            # 新增：用户检测次数字段
+            db.engine.execute("""
+                ALTER TABLE users 
+                ADD COLUMN IF NOT EXISTS detection_count INTEGER DEFAULT 0
+            """)
+
+            print("✅ 数据库迁移成功！新增 detection_count 字段")
             return """
                 <h1 style="color:green">✅ 迁移成功！</h1>
-                <p>现在可以正常使用检测和后台管理系统了。</p>
-                <p><strong>请立即删除这个 /migrate 路由！</strong></p>
+                <p>已自动为 users 表添加 detection_count 字段</p>
+                <p><strong>现在可以正常检测了！</strong></p>
             """
         except Exception as e:
-            print(f"❌ 迁移失败: {str(e)}")
             return f"""
                 <h1 style="color:red">❌ 迁移失败</h1>
                 <p>{str(e)}</p>
-                <p>请检查数据库权限或手动执行 SQL。</p>
             """
 
 
