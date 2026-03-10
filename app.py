@@ -1,4 +1,4 @@
-from jieba.lac_small.predict import folder
+# from jieba.lac_small.predict import folder
 from werkzeug.datastructures import file_storage
 from werkzeug.utils import secure_filename, send_file
 from detector import read_file
