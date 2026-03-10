@@ -222,13 +222,15 @@ def logout():
 @app.route('/', methods=['GET', 'POST'])
 @jwt_required()
 def index():
+    #统一身份解析
     identity = get_jwt_identity()
     user = User.query.get(int(identity)) if identity else None
     if not user:
         flash('⚠️ 用户异常，请重新登录！', 'danger')
         return redirect(url_for('logout'))
-    form = DetectionForm()   # 每次都实例化
 
+
+    form = DetectionForm()
 
     if request.method == 'POST' and form.validate_on_submit():
         test_file = form.test_file.data
@@ -237,22 +239,18 @@ def index():
 
         if not allowed_file(test_file.filename):
             flash('❌ 仅支持 .txt / .pdf / .docx 文件！')
-            return render_template('index.html', current_user=current_user, form=form)
+            return render_template('index.html', current_user=user.username, form=form)
 
         filename = secure_filename(test_file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
         if '..' in filename or filename.startswith('/'):
             flash('❌ 非法文件名！')
-            return render_template('index.html', current_user=current_user, form=form)
+            return render_template('index.html', current_user=user.username, form=form)
 
         test_file.save(filepath)
 
-        user = User.query.filter_by(username=current_user).first()
-        if not user:
-            flash('用户异常')
-            return redirect(url_for('logout'))
-
+        #提交 Celery 任务
         task = detect_plagiarism.delay(
             test_filename=filename,
             category=category,
@@ -274,8 +272,9 @@ def index():
         flash(f'✅ 检测任务已提交！任务ID: {task.id}')
         return redirect(url_for('status', task_id=task.id))
 
-    # GET 或验证失败 → 重新渲染表单（关键！）
-    return render_template('index.html', current_user=current_user, form=form)
+    return render_template('index.html',
+                           current_user=user.username,
+                           form=form)
 
 # status 路由
 @app.route('/status/<task_id>')
@@ -292,7 +291,7 @@ def status(task_id):
         flash(f'❌ 任务 {task_id} 不存在或已过期')
         return redirect(url_for('index'))
 
-    current_user = get_jwt_identity()
+
     task = detect_plagiarism.AsyncResult(task_id)
 
     # 优先判断数据库是否有结果（应对超快完成任务）
@@ -440,10 +439,10 @@ def export_pdf(task_id):
 
     print(f"访问 PDF 导出路由，task_id = {task_id}")
     job = DetectionJob.query.get_or_404(task_id)
-    current_user = get_jwt_identity()
+
 
     # 权限校验
-    user = User.query.filter_by(username=current_user).first()
+    # user = User.query.filter_by(username=current_user).first()
     if not user or job.user_id != user.id:
         flash('❌ 只能导出自己的检测报告！')
         return redirect(url_for('index'))
