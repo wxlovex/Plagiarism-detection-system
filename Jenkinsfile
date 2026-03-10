@@ -174,6 +174,7 @@ pipeline {
                           -e REDIS_PORT=6379 \
                           plagiarism-detection:latest
                         rm /tmp/app.tar
+                        sudo docker image prune -f
                         echo '✅ 部署成功！访问 http://${TARGET_HOST}:5000'
                     "
                     rm -f app.tar
