@@ -14,6 +14,12 @@ class User(db.Model):
     role = db.Column(db.String(20), default='student')  # student / teacher / admin
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def set_password(self, password):
+        self.hashed_password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.hashed_password, password)
+
 class Template(db.Model):
     __tablename__ = 'templates'
     __table_args__ = {'extend_existing': True}

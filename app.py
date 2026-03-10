@@ -152,7 +152,7 @@ def login():
 
         user = User.query.filter_by(username=username).first()
 
-        if user and user.hashed_password(password):
+        if user and user.check_password(password):
             # 强制校验角色选择
             if selected_role == 'admin' and user.role != 'admin':
                 flash('❌ 该账号没有管理员权限！请选择“普通用户”登录', 'danger')
