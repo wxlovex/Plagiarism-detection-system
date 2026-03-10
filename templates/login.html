@@ -84,17 +84,33 @@
         <form method="POST">
 
             <!-- 新增：角色选择 -->
-            <div class="mb-4" >
-                <label class="form-label fw-bold">请选择登录身份：</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="login_role" id="role_student" value="student" checked>
-                    <label class="form-check-label" for="role_student">普通用户登录</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="login_role" id="role_admin" value="admin">
-                    <label class="form-check-label" for="role_admin">管理员登录</label>
-                </div>
-            </div>
+            <!-- ==================== 美化版选项卡 ==================== -->
+        <div class="mb-4">
+            <label class="form-label fw-bold mb-3">请选择登录身份：</label>
+
+            <!-- 选项卡 -->
+            <ul class="nav nav-pills nav-fill mb-3" id="roleTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active d-flex align-items-center justify-content-center gap-2 py-3 fs-5"
+                            id="student-tab"
+                            data-role="student"
+                            type="button">
+                        普通用户
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center justify-content-center gap-2 py-3 fs-5"
+                            id="admin-tab"
+                            data-role="admin"
+                            type="button">
+                        管理员
+                    </button>
+                </li>
+            </ul>
+
+            <!-- 隐藏字段（提交用） -->
+            <input type="hidden" name="login_role" id="login_role" value="student">
+        </div>
 
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
@@ -111,3 +127,17 @@
     </div>
 </body>
 </html>
+
+<script>
+    // 选项卡切换逻辑
+    document.querySelectorAll('#roleTabs button').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // 切换激活状态
+            document.querySelectorAll('#roleTabs button').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            // 更新隐藏字段
+            document.getElementById('login_role').value = this.getAttribute('data-role');
+        });
+    });
+</script>

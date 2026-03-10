@@ -15,7 +15,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, render_template, request, flash, redirect, url_for, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, unset_jwt_cookies, set_access_cookies, get_jwt
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, unset_jwt_cookies, \
+    set_access_cookies, get_jwt, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import DB_CONFIG, JWT_SECRET_KEY, redis_client, ADMIN_USERNAME, ADMIN_DEFAULT_PASSWORD
 from models import db, User, Template, DetectionJob
@@ -114,33 +115,35 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
 #登录
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:          # 已登录用户直接跳转
+        return redirect(url_for('index'))
+
     if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
+        selected_role = request.form.get('login_role')   # 关键：获取单选框选择
 
         user = User.query.filter_by(username=username).first()
 
-        if user and check_password_hash(user.hashed_password, password):
-            # access_token = create_access_token(identity=username)
-            selected_role = request.form.get('login_role')  # 获取单选框的值
-
+        if user and user.check_password(password):
+            # ==================== 强制校验角色选择 ====================
             if selected_role == 'admin' and user.role != 'admin':
                 flash('❌ 该账号没有管理员权限！请选择“普通用户”登录', 'danger')
                 return redirect(url_for('login'))
 
             if selected_role == 'student' and user.role != 'student':
-                flash('❌ 该账号为管理员账号，请选择“管理员”登录', 'danger')
+                flash('❌ 该账号为管理员，请选择“管理员”登录', 'danger')
                 return redirect(url_for('login'))
 
-                # 通过校验 → 正常登录
-                login_user(user)
-                access_token = create_access_token(identity=str(user.id))
-                resp = make_response(redirect(url_for('index')))
-                set_access_cookies(resp, access_token)
-                flash(f'✅ 欢迎回来，{user.username}！', 'success')
-                return resp
-    else:
-        flash('用户名或密码错误！','danger')
+            # ==================== 登录成功 ====================
+            access_token = create_access_token(identity=str(user.id))
+            resp = make_response(redirect(url_for('index')))
+            set_access_cookies(resp, access_token)
+            flash(f'✅ 欢迎回来，{user.username}！', 'success')
+            return resp
+
+        else:
+            flash('❌ 用户名或密码错误！', 'danger')
 
     return render_template('login.html')
 
