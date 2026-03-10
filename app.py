@@ -1,4 +1,5 @@
 # from jieba.lac_small.predict import folder
+from jieba.lac_small.predict import folder
 from werkzeug.datastructures import file_storage
 from werkzeug.utils import secure_filename, send_file
 from detector import read_file
@@ -223,9 +224,12 @@ def logout():
 @app.route('/', methods=['GET', 'POST'])
 @jwt_required()
 def index():
-    current_user = get_jwt_identity()
+    identity = get_jwt_identity()
+    user = User.query.get(int(identity)) if identity else None
+    if not user:
+        flash('⚠️ 用户异常，请重新登录！', 'danger')
+        return redirect(url_for('logout'))
     form = DetectionForm()   # 每次都实例化
-    current_user_id = int(current_user.id) if current_user and hasattr(current_user, 'id') else None
 
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -254,8 +258,7 @@ def index():
         task = detect_plagiarism.delay(
                 file_storage=file_storage,          # 你的原有参数
                 folder=folder,
-                threshold=threshold,
-                user_id=current_user_id
+                threshold=threshold
         )
 
         job = DetectionJob(
@@ -279,6 +282,12 @@ def index():
 @app.route('/status/<task_id>')
 @jwt_required()
 def status(task_id):
+    identity = get_jwt_identity()
+    user = User.query.get(int(identity)) if identity else None
+    if not user:
+        flash('⚠️ 用户异常，请重新登录！', 'danger')
+        return redirect(url_for('logout'))
+
     job = DetectionJob.query.get(task_id)
     if not job:
         flash(f'❌ 任务 {task_id} 不存在或已过期')
@@ -389,30 +398,47 @@ def migrate_db():
 
 # 检测历史记录
 @app.route('/history')
-@jwt_required()
+@jwt_required()   # 必须保留保护
 def history():
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(username=current_user).first()
-
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '').strip()
 
-    query = DetectionJob.query.filter_by(user_id=user.id)
+    # === 关键修复：使用 get_jwt_identity() 替代 current_user ===
+    identity = get_jwt_identity()
+    if not identity:
+        flash('⚠️ 请先登录系统！', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = int(identity)
+    user = User.query.get(user_id)
+    if not user:
+        flash('⚠️ 用户信息异常，请重新登录！', 'danger')
+        return redirect(url_for('login'))
+
+    # 查询当前用户的检测记录
+    query = DetectionJob.query.filter_by(user_id=user.id).order_by(DetectionJob.created_at.desc())
+
     if search:
         query = query.filter(DetectionJob.test_filename.like(f'%{search}%'))
 
-    jobs = query.order_by(DetectionJob.created_at.desc()).paginate(page=page, per_page=10)
+    jobs = query.paginate(page=page, per_page=10, error_out=False)
 
     return render_template('history.html',
                            jobs=jobs,
                            search=search,
-                           current_user=current_user)
+                           current_user=user)   # 传递给模板使用
 
 
 # 报告导出
 @app.route('/export/pdf/<task_id>')
 @jwt_required()
 def export_pdf(task_id):
+    identity = get_jwt_identity()
+    user = User.query.get(int(identity)) if identity else None
+    if not user:
+        flash('⚠️ 用户异常，请重新登录！', 'danger')
+        return redirect(url_for('logout'))
+
     print(f"访问 PDF 导出路由，task_id = {task_id}")
     job = DetectionJob.query.get_or_404(task_id)
     current_user = get_jwt_identity()
