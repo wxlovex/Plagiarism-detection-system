@@ -1,5 +1,3 @@
-# from jieba.lac_small.predict import folder
-from jieba.lac_small.predict import folder
 from werkzeug.datastructures import file_storage
 from werkzeug.utils import secure_filename, send_file
 from detector import read_file
@@ -256,9 +254,10 @@ def index():
             return redirect(url_for('logout'))
 
         task = detect_plagiarism.delay(
-                file_storage=file_storage,          # 你的原有参数
-                folder=folder,
-                threshold=threshold
+            test_filename=filename,
+            category=category,
+            threshold=threshold,
+            user_id=user.id
         )
 
         job = DetectionJob(
