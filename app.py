@@ -114,6 +114,7 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
 # ====================== 路由 ======================
 #登录
 @app.route('/login', methods=['GET', 'POST'])
+@jwt_required(optional=True)
 def login():
     if current_user.is_authenticated:          # 已登录用户直接跳转
         return redirect(url_for('index'))
