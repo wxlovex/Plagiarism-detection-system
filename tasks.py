@@ -40,6 +40,9 @@ def detect_plagiarism(self, test_filename, category, threshold, user_id):
                 file_storage = FileStorage(f, filename=test_filename)
                 text1 = extract_text(file_storage)
 
+            if not text1 or len(text1.strip()) < 30:
+                return {'error': '未能提取到有效致谢内容（文本过短或格式不支持）'}
+
             text1 = extract_acknowledgements(text1)
             self.update_state(state='PROGRESS', meta={'progress': 30})
 

@@ -1,3 +1,4 @@
+from flask_wtf.file import FileRequired, FileAllowed
 from werkzeug.datastructures import file_storage
 from werkzeug.utils import secure_filename, send_file
 from detector import read_file
@@ -119,7 +120,10 @@ def user_lookup_callback(_jwt_header, jwt_data):
 
 # 创建表单类
 class DetectionForm(FlaskForm):
-    test_file = FileField('测试文件', validators=[DataRequired()])
+    test_file = FileField('测试文件（支持 TXT / PDF / DOCX）', validators=[
+        FileRequired(),
+        FileAllowed(ALLOWED_EXTENSIONS, '只允许上传 .txt、.pdf、.docx 文件！')
+    ])
     folder = SelectField('模板库', choices=[('general', '致谢模版50篇（通用）'), ('computer', '计算机致谢模版30篇（专业）')], validators=[DataRequired()])
     threshold = FloatField('阈值', default=0.7, validators=[DataRequired()])
 
