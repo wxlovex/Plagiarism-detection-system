@@ -436,6 +436,43 @@ def history():
                            search=search,
                            current_user=user)   # 传递给模板使用
 
+# 仪表盘路由
+@app.route('/')
+@jwt_required()
+def dashboard():
+    identity = get_jwt_identity()
+    user = User.query.get(int(identity))
+
+    # ==================== 统计数据 ====================
+    total_jobs = DetectionJob.query.filter_by(user_id=user.id).count()
+    this_month_jobs = DetectionJob.query.filter(
+        DetectionJob.user_id == user.id,
+        DetectionJob.created_at >= datetime.utcnow().replace(day=1)
+    ).count()
+
+    # 平均 AI 生成率
+    jobs = DetectionJob.query.filter_by(user_id=user.id).all()
+    ai_rates = []
+    for job in jobs:
+        if job.result_json and 'aigc_analysis' in job.result_json:
+            ai_rates.append(job.result_json['aigc_analysis'].get('total_score', 0))
+    avg_ai_rate = round(sum(ai_rates) / len(ai_rates), 1) if ai_rates else 0
+
+    # 模板库数量
+    total_templates = Template.query.count()
+
+    # 最近 5 次检测
+    recent_jobs = DetectionJob.query.filter_by(user_id=user.id)\
+        .order_by(DetectionJob.created_at.desc()).limit(5).all()
+
+    return render_template('dashboard.html',
+                           total_jobs=total_jobs,
+                           this_month_jobs=this_month_jobs,
+                           avg_ai_rate=avg_ai_rate,
+                           total_templates=total_templates,
+                           recent_jobs=recent_jobs,
+                           current_user=user)
+
 
 # 报告导出
 @app.route('/export/pdf/<task_id>')

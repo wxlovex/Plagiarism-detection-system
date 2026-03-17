@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}仪表盘{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">📊 个人仪表盘</h1>
+
+    <!-- 统计卡片 -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                    <h5>总检测次数</h5>
+                    <h2 class="display-4">{{ total_jobs }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <h5>本月检测</h5>
+                    <h2 class="display-4">{{ this_month_jobs }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body text-center">
+                    <h5>平均 AI 生成率</h5>
+                    <h2 class="display-4">{{ avg_ai_rate }}%</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                    <h5>模板库总量</h5>
+                    <h2 class="display-4">{{ total_templates }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 趋势图 -->
+    <div class="card mt-4">
+        <div class="card-header">月度检测趋势</div>
+        <div class="card-body">
+            <canvas id="trendChart" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- 最近检测 -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between">
+            <span>最近 5 次检测记录</span>
+            <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-primary">查看全部</a>
+        </div>
+        <div class="card-body">
+            {% for job in recent_jobs %}
+            <div class="d-flex justify-content-between align-items-center border-bottom py-3">
+                <div>
+                    <strong>{{ job.test_filename }}</strong><br>
+                    <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-danger">{{ job.result_json.aigc_analysis.total_score }}% AI</span>
+                </div>
+                <div>
+                    <a href="{{ url_for('status', task_id=job.id) }}" class="btn btn-sm btn-primary">查看报告</a>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-center text-muted py-4">暂无检测记录</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="text-center mt-5">
+        <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg me-3">🚀 开始新检测</a>
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary btn-lg">📋 历史记录</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 示例趋势图（真实数据可后续从后端传入）
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: ['1月','2月','3月','4月','5月','6月'],
+            datasets: [{
+                label: '检测次数',
+                data: [3, 7, 12, 8, 15, 20],
+                borderColor: '#0d6efd',
+                tension: 0.3
+            }]
+        },
+        options: { scales: { y: { beginAtZero: true } } }
+    });
+</script>
+{% endblock %}
