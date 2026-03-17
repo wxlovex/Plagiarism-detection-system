@@ -183,7 +183,7 @@ def login():
         else:
             flash('❌ 用户名或密码错误！', 'danger')
 
-    return render_template('login.html')
+    return render_template('dashboard.html')
 
 #注册
 @app.route('/register', methods=['GET', 'POST'])
@@ -223,7 +223,7 @@ def logout():
     return resp
 
 # 检测主路由
-@app.route('/', methods=['GET', 'POST'])
+@app.route('detect', methods=['GET', 'POST'])
 @jwt_required()
 def index():
     #统一身份解析
@@ -437,7 +437,7 @@ def history():
                            current_user=user)   # 传递给模板使用
 
 # 仪表盘路由
-@app.route('/dashboard')
+@app.route('/')
 @jwt_required()
 def dashboard():
     identity = get_jwt_identity()
@@ -447,15 +447,21 @@ def dashboard():
     total_jobs = DetectionJob.query.filter_by(user_id=user.id).count()
     this_month_jobs = DetectionJob.query.filter(
         DetectionJob.user_id == user.id,
-        DetectionJob.created_at >= datetime.now().replace(day=1)
+        DetectionJob.created_at >= datetime.utcnow().replace(day=1)
     ).count()
 
-    # 平均 AI 生成率
+    # 平均 AI 生成率（安全解析 JSON 字符串）
     jobs = DetectionJob.query.filter_by(user_id=user.id).all()
     ai_rates = []
     for job in jobs:
-        if job.result_json and 'aigc_analysis' in job.result_json:
-            ai_rates.append(job.result_json['aigc_analysis'].get('total_score', 0))
+        if job.result_json:
+            try:
+                # 如果是字符串就解析，否则直接使用
+                data = json.loads(job.result_json) if isinstance(job.result_json, str) else job.result_json
+                if isinstance(data, dict) and 'aigc_analysis' in data:
+                    ai_rates.append(data['aigc_analysis'].get('total_score', 0))
+            except (json.JSONDecodeError, TypeError, KeyError):
+                continue  # 跳过异常数据
     avg_ai_rate = round(sum(ai_rates) / len(ai_rates), 1) if ai_rates else 0
 
     # 模板库数量
