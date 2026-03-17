@@ -437,7 +437,7 @@ def history():
                            current_user=user)   # 传递给模板使用
 
 # 仪表盘路由
-@app.route('/')
+@app.route('/dashboard')
 @jwt_required()
 def dashboard():
     identity = get_jwt_identity()
@@ -447,7 +447,7 @@ def dashboard():
     total_jobs = DetectionJob.query.filter_by(user_id=user.id).count()
     this_month_jobs = DetectionJob.query.filter(
         DetectionJob.user_id == user.id,
-        DetectionJob.created_at >= datetime.utcnow().replace(day=1)
+        DetectionJob.created_at >= datetime.now().replace(day=1)
     ).count()
 
     # 平均 AI 生成率
