@@ -183,7 +183,7 @@ def login():
         else:
             flash('❌ 用户名或密码错误！', 'danger')
 
-    return render_template('index.html')
+    return render_template('login.html')
 
 #注册
 @app.route('/register', methods=['GET', 'POST'])
