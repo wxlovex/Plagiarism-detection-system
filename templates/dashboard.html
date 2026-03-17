@@ -63,7 +63,7 @@
                     <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                 </div>
                 <div class="text-end">
-                    <span class="badge bg-danger">{{ job.result_json.aigc_analysis.total_score }}% AI</span>
+                    <span class="badge bg-danger">{{ job.ai_score }}% AI</span>
                 </div>
                 <div>
                     <a href="{{ url_for('status', task_id=job.id) }}" class="btn btn-sm btn-primary">查看报告</a>

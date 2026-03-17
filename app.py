@@ -450,26 +450,35 @@ def dashboard():
         DetectionJob.created_at >= datetime.utcnow().replace(day=1)
     ).count()
 
-    # 平均 AI 生成率（安全解析 JSON 字符串）
+    # 平均 AI 生成率
     jobs = DetectionJob.query.filter_by(user_id=user.id).all()
     ai_rates = []
     for job in jobs:
         if job.result_json:
             try:
-                # 如果是字符串就解析，否则直接使用
                 data = json.loads(job.result_json) if isinstance(job.result_json, str) else job.result_json
                 if isinstance(data, dict) and 'aigc_analysis' in data:
                     ai_rates.append(data['aigc_analysis'].get('total_score', 0))
-            except (json.JSONDecodeError, TypeError, KeyError):
-                continue  # 跳过异常数据
+            except:
+                continue
     avg_ai_rate = round(sum(ai_rates) / len(ai_rates), 1) if ai_rates else 0
 
-    # 模板库数量
     total_templates = Template.query.count()
 
-    # 最近 5 次检测
+    # 最近 5 次检测（关键：预处理 ai_score）
     recent_jobs = DetectionJob.query.filter_by(user_id=user.id)\
         .order_by(DetectionJob.created_at.desc()).limit(5).all()
+
+    # 为每个 job 添加 ai_score 属性（模板直接用）
+    for job in recent_jobs:
+        job.ai_score = 0
+        if job.result_json:
+            try:
+                data = json.loads(job.result_json) if isinstance(job.result_json, str) else job.result_json
+                if isinstance(data, dict) and 'aigc_analysis' in data:
+                    job.ai_score = data['aigc_analysis'].get('total_score', 0)
+            except:
+                pass
 
     return render_template('dashboard.html',
                            total_jobs=total_jobs,
