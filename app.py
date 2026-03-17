@@ -223,7 +223,7 @@ def logout():
     return resp
 
 # 检测主路由
-@app.route('detect', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 @jwt_required()
 def index():
     #统一身份解析
@@ -437,7 +437,7 @@ def history():
                            current_user=user)   # 传递给模板使用
 
 # 仪表盘路由
-@app.route('/')
+@app.route('/dashboard')
 @jwt_required()
 def dashboard():
     identity = get_jwt_identity()
